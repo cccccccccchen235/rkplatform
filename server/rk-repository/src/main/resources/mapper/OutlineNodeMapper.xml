@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruankao.repository.mapper.OutlineNodeMapper">
+
+    <!-- 列名显式写出，理由见 SubjectMapper.xml：实体在 rk-domain，不能挂 @TableField -->
+    <sql id="outlineColumns">
+        n.id,
+        n.subject_id,
+        n.parent_id,
+        n.level,
+        n.name,
+        n.sort_no,
+        n.origin,
+        n.question_count,
+        n.status,
+        n.created_at,
+        n.updated_at
+    </sql>
+
+    <!--
+      排序按 (level, sort_no, id)：Service 组装树时按顺序扫一遍即可，
+      父节点保证先于子节点出现（level 小的先出），不必先建索引表。
+      includeDisabled 用 <if> 拼接：考生端只取 ENABLED，
+      与错误码 3001「科目不存在或已停用」对下架科目的一致处理保持同一口径。
+    -->
+    <select id="selectBySubject" resultType="com.ruankao.domain.entity.OutlineNode">
+        SELECT
+        <include refid="outlineColumns"/>
+        FROM rk_outline_node n
+        <where>
+            n.subject_id = #{subjectId}
+            <if test="!includeDisabled">
+                AND n.status = 'ENABLED'
+            </if>
+        </where>
+        ORDER BY n.level ASC, n.sort_no ASC, n.id ASC
+        <!-- AC-4：结果集必须有上界。3 层树的规模天然有界，此处只是兜底 -->
+        LIMIT 1000
+    </select>
+
+    <select id="selectById" resultType="com.ruankao.domain.entity.OutlineNode">
+        SELECT
+        <include refid="outlineColumns"/>
+        FROM rk_outline_node n
+        WHERE n.id = #{id}
+    </select>
+
+    <!-- created_at / updated_at 交给 DDL 默认值，不由应用写入：时钟以库为准 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO rk_outline_node
+            (subject_id, parent_id, level, name, sort_no, origin, status)
+        VALUES
+            (#{subjectId}, #{parentId}, #{level}, #{name}, #{sortNo}, #{origin}, #{status})
+    </insert>
+
+    <!--
+      可改列：parent_id / level / name / sort_no / origin。
+      level 由 Service 依 parentId 推导后传入（唯一推导点）；
+      subject_id 不在其中（章节不跨科目搬家）；
+      question_count 是冗余统计列，由统计任务写，不由编辑入口写。
+    -->
+    <update id="update">
+        UPDATE rk_outline_node
+        SET parent_id = #{parentId},
+            level     = #{level},
+            name      = #{name},
+            sort_no   = #{sortNo},
+            origin    = #{origin}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 跨层拖拽时必须一起改 level，否则子树会按旧层级插到错误位置 -->
+    <update id="updateSort">
+        UPDATE rk_outline_node
+        SET parent_id = #{parentId},
+            sort_no   = #{sortNo},
+            level     = #{level}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 级联平移：父节点层级变了，子孙的 parent_id / sort_no 都没变，只改 level -->
+    <update id="updateLevel">
+        UPDATE rk_outline_node SET level = #{level} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM rk_outline_node WHERE id = #{id}
+    </delete>
+
+    <select id="countChildren" resultType="int">
+        SELECT COUNT(*) FROM rk_outline_node WHERE parent_id = #{parentId}
+    </select>
+
+    <!-- COALESCE：同级一个节点都没有时必须是 0 而不是 NULL -->
+    <select id="selectMaxSortNo" resultType="int">
+        SELECT COALESCE(MAX(n.sort_no), 0)
+        FROM rk_outline_node n
+        WHERE n.subject_id = #{subjectId}
+          AND n.parent_id = #{parentId}
+    </select>
+
+    <!--
+      引用检查查的是 rk_question.outline_id。
+      刻意不加 status 过滤：草稿/待审题同样持有该 outline_id，
+      只数 PUBLISHED 会放行一次会让那些题目的章节路径悬空的数据损坏。
+    -->
+    <select id="countQuestionRefs" resultType="int">
+        SELECT COUNT(*) FROM rk_question WHERE outline_id = #{outlineId}
+    </select>
+
+</mapper>

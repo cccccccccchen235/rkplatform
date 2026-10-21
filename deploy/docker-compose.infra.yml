@@ -1,0 +1,89 @@
+# deploy/docker-compose.infra.yml   —— 仅本地开发用（对应 10 文档 P1）
+# 用法：cd deploy && docker compose -f docker-compose.infra.yml up -d
+# 只起 MySQL + Redis；后端/前端在本地运行，不再容器化
+# 设计出处：09 §9.3.2（本文件是其落地，二者应保持一致）
+name: ruankao-infra          # 独立 project name：命名卷不与生产 ruankao 项目的卷冲突
+
+services:
+
+  # ---------------- MySQL ----------------
+  mysql:
+    image: mysql:8.0
+    container_name: rk-dev-mysql
+    # 刻意映射到宿主机 3306：本地工具链（IDEA/DBeaver/mysql 客户端）要直连，理由见下方决策块
+    ports:
+      - "3306:3306"
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+08:00
+      - --explicit_defaults_for_timestamp=1
+      - --innodb-buffer-pool-size=256M      # 本地数据量小，不必照抄生产的 1024M
+      - --max-connections=100
+      - --max-allowed-packet=64M
+      - --slow-query-log=0                  # 本地不需要慢日志
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-dev_root_pwd}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ruankao}
+      MYSQL_USER: ${MYSQL_USERNAME:-ruankao}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-dev_app_pwd}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - infra-mysql-data:/var/lib/mysql     # 本地独立命名卷，不与生产 mysql-data 混用
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks: [rk-dev-net]
+
+  # ---------------- Redis ----------------
+  redis:
+    image: redis:7-alpine
+    container_name: rk-dev-redis
+    # 刻意映射到宿主机 6379：理由同 MySQL
+    ports:
+      - "6379:6379"
+    command:
+      - redis-server
+      - --port
+      - "6379"
+      - --requirepass
+      - ${REDIS_PASSWORD:-dev_redis_pwd}
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --maxmemory
+      - 128mb
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-dev_redis_pwd}   # 供 healthcheck 使用
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - infra-redis-data:/data              # 本地独立命名卷
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [rk-dev-net]
+
+volumes:
+  infra-mysql-data:            # project name 为 ruankao-infra，故实际卷名为 ruankao-infra_infra-mysql-data
+  infra-redis-data:
+
+networks:
+  rk-dev-net:
+    driver: bridge
+
+# ===============================================================
+# 决策与理由（09 §9.3.2，在此复述要点以免读文件的人不知道为什么不照抄生产）
+#
+# · 本地故意把 3306:3306 / 6379:6379 映射到宿主机，与生产「不映射宿主端口」相反：
+#   本地工具链就是要直连这两个端口，不映射则无法调试数据库；开发机位于 NAT 之后，
+#   暴露对象是自己的机器，不是公网。若开发机直连公网，必须先加防火墙限制来源 IP。
+# · 卷用独立命名卷（infra-*），project name 也是独立的 ruankao-infra，
+#   不会与生产卷互相覆盖，也不会让本地调试误连生产快照。
+# · 不设 restart: always：本地更希望看到启动报错，也不要后台常驻占资源。
+# ===============================================================

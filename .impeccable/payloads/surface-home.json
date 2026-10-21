@@ -1,0 +1,176 @@
+{
+  "title": "考生端首页：选一个结构",
+  "question": "视觉世界已由 docs/07 §7.9 钉住（Element Plus 变量体系：主色 #2a72c2，运行期覆盖其默认 #409eff、圆角 2/4/8、1280px 桌面优先），所以这一轮选的不是长相，而是首页用什么结构讲清「这个站有什么」。掷出的是「考期总表 / 书架书脊 / 寻路站牌」三张，外加一张挑战者。五张牌共用同一套色板与字体，差别全部在组成方式。",
+  "options": [
+    {
+      "id": "lead-exam-calendar",
+      "label": "考期总表",
+      "kicker": "THE ROLL",
+      "lineage": "软考招考公告与考试日程表——真实考期是这门考试最独特的结构",
+      "thesis": "一屏就是六个数字撑起来的总表：三栏真实考期（两次 6 / 上半年 7 / 下半年 7）× 三带级别（高级 5 / 中级 11 / 初级 4），20 行一个不漏。",
+      "palette": ["#2a72c2", "#303133", "#f5f7fa", "#dcdfe6"],
+      "materials": ["Element Plus 变量体系（只覆盖颜色变量，不改组件结构）", "1px 表格细线，零投影零渐变", "中文无衬线正文 + 等宽数字对齐"],
+      "viewport": "顶栏之下直接是三栏并置的总表，每栏一个考期；栏内按高级/中级/初级分带，行是科目（名称 + 代码 + 题量 / 大纲完备 / 卷面满分），1280×800 内 20 行全部可见，无需滚动。",
+      "risk": "每栏只有约 380px，科目名最长 9 个汉字再加代码就已顶格；数字列一旦超过两个就退化成普通表格。",
+      "raised": [
+        { "from": "vertical-feed-surface", "raise": "段落级落位：三段考期各自整段对齐，滚动不停在半截行上。" },
+        { "from": "oscilloscope-signal-bench", "raise": "数字共用栅格：所有数字右对齐同一列，且只出现可比口径（分/题/节），不写形容词。" },
+        { "from": "hypercard-stack", "raise": "每层可寻址：级别、考期、科目都进 URL，后退精确回到上一步。" },
+        { "from": "cyclorama-dawn", "raise": "色不独担信息：级别与考期同时用文字与位置表达，颜色只是第三重。" },
+        { "from": "tensegrity-column", "raise": "口径可追溯：卷面满分与可判分满分永远并列出现，绝不混成一个数字。" }
+      ],
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          { "label": "顶栏：站名 / 当前科目 / 登录", "x": 0, "y": 0, "w": 12, "h": 1 },
+          { "label": "标题一句：20 个科目，按真实考期排", "x": 0, "y": 1, "w": 12, "h": 1 },
+          { "label": "上半年 7 科目：级别带 + 科目行", "x": 0, "y": 2, "w": 4, "h": 7, "accent": true },
+          { "label": "下半年 7 科目", "x": 4, "y": 2, "w": 4, "h": 7 },
+          { "label": "两次 6 科目", "x": 8, "y": 2, "w": 4, "h": 7 },
+          { "label": "脚注：满分口径与大纲完备度的含义", "x": 0, "y": 9, "w": 12, "h": 1 }
+        ]
+      }
+    },
+    {
+      "id": "alt-shelf",
+      "label": "书架书脊",
+      "lineage": "备考用书的书架——书脊是唯一能一眼比出高矮的版式",
+      "thesis": "20 本书按级别上三层架，脊高就是这科的卷面满分（225 / 150 / 75），书脊色带是考期，还没大纲的 17 本以「待印」灰脊立在架上。",
+      "palette": ["#2a72c2", "#303133", "#f5f7fa", "#dcdfe6"],
+      "materials": ["Element Plus 变量体系", "书脊用纯色块与 1px 描边，不用纹理图或拟物阴影", "脊高由满分换算，不做手工排版"],
+      "viewport": "三层书架占满首屏，高级 5 本（225 分，最高）在上、中级 11 本居中、初级 4 本在下；IPT 明显矮一截（75 分），一眼看出它少一节可模拟的卷面。",
+      "risk": "高矮是唯一变量，20 本里有 19 本同高（150/225 只差两档），容易读成三条一样的色带；「待印」灰脊占比 17/20，架上会大面积发灰。",
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          { "label": "顶栏：站名 / 当前科目 / 登录", "x": 0, "y": 0, "w": 12, "h": 1 },
+          { "label": "上层：高级 5 本，脊高 = 225 分", "x": 0, "y": 1, "w": 12, "h": 3 },
+          { "label": "中层：中级 11 本，脊高 = 150 分", "x": 0, "y": 4, "w": 12, "h": 3, "accent": true },
+          { "label": "下层：初级 4 本，IPT 脊矮 = 75 分", "x": 0, "y": 7, "w": 12, "h": 2 },
+          { "label": "脚注：色带 = 考期，灰脊 = 大纲未完备", "x": 0, "y": 9, "w": 12, "h": 1 }
+        ]
+      }
+    },
+    {
+      "id": "alt-wayfinding",
+      "label": "寻路站牌",
+      "lineage": "地铁线路图——三个级别是三段线，科目是线上站点",
+      "thesis": "把 20 个科目摊成一张线路图：级别是三段线，站点是科目，实心站点是已有大纲的 3 个，右栏是被选中站点的卷面说明。",
+      "palette": ["#2a72c2", "#303133", "#f5f7fa", "#dcdfe6"],
+      "materials": ["Element Plus 变量体系", "线路图用 SVG 折线 + 圆点站点，站点大小编码题量", "右栏复用 Element Plus 描述列表的排版"],
+      "viewport": "左半是纵向线路图（高级段 5 站、中级段 11 站、初级段 4 站），右半固定为当前站点的考期、时长、分节构成与满分；↑↓ 换站，Enter 进入，鼠标不是必需品。",
+      "risk": "线路图的语言在中文公共空间里是「去哪怎么走」，不是「有什么」；20 个站点的名字全塞进一条线，站点名会挤到需要省略号。",
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          { "label": "顶栏：站名 / 当前科目 / 登录", "x": 0, "y": 0, "w": 12, "h": 1 },
+          { "label": "线路图：三段线、20 站点，实心=已有大纲", "x": 0, "y": 1, "w": 5, "h": 8 },
+          { "label": "站点详情：考期 / 时长 / 分节 / 满分口径", "x": 5, "y": 1, "w": 7, "h": 8, "accent": true },
+          { "label": "键盘提示：↑↓ 换站，Enter 进入", "x": 0, "y": 9, "w": 12, "h": 1 }
+        ]
+      }
+    },
+    {
+      "id": "challenger-terminal-wayfinding",
+      "label": "航站楼悬带",
+      "verdict": "competitive",
+      "lineage": "机场导视的黄色悬带（只借拓扑，黄底不在承诺里）",
+      "thesis": "首页不是一张表，而是一条决定链：一屏一块悬带，只回答一个问题——你考哪一级、然后哪个科目、然后什么时候考。",
+      "palette": ["#2a72c2", "#303133", "#f5f7fa", "#dcdfe6"],
+      "materials": ["Element Plus 变量体系（主色蓝代替航站楼黄）", "悬带整幅通栏 + 白字，箭头锁定悬带右缘", "科目名按站点号规模放大，成为主视觉"],
+      "viewport": "第一块悬带只有三个选项（初级/中级/高级）与各自科目数；选定后第二块悬带整幅换字，列出该级别的科目与题量；已选路径在上方持续高亮，选完的悬带不撤走。",
+      "case": "融合后站得住：导视是中文读者最熟的寻路语言，一屏一问也不会过载；但它在「有什么」这个任务上输给总表——一条决定链永远看不见全貌，而首页正是要回答全貌。",
+      "risk": "悬带会强制把 20 个科目藏进三次点击之后，回访用户每次都要重走一遍决定链。",
+      "hero": "https://impeccable.style/worlds/cards/wayfinding-cartography-signage-terminal-yellow-wayfinding-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/wayfinding-cartography-signage-terminal-yellow-wayfinding.webp",
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          { "label": "顶栏：站名 / 登录", "x": 0, "y": 0, "w": 12, "h": 1 },
+          { "label": "悬带一：你考哪一级（三个选项）", "x": 0, "y": 1, "w": 12, "h": 2, "accent": true },
+          { "label": "悬带二：该级别的科目，右缘箭头", "x": 0, "y": 3, "w": 12, "h": 2 },
+          { "label": "悬带三：考期与卷面，距离 = 时长", "x": 0, "y": 5, "w": 12, "h": 2 },
+          { "label": "已选路径保持高亮，未开通的科目整条撤下", "x": 0, "y": 7, "w": 12, "h": 2 },
+          { "label": "一屏只留一个决定", "x": 0, "y": 9, "w": 12, "h": 1 }
+        ]
+      }
+    },
+    {
+      "id": "challenger-vertical-feed",
+      "label": "竖滑信息流",
+      "verdict": "declined",
+      "lineage": "竖屏信息流：一屏一项，右侧竖排操作",
+      "thesis": "一个科目占满整屏，一滑到底下一个。",
+      "palette": ["#2a72c2", "#303133", "#f5f7fa", "#dcdfe6"],
+      "materials": ["Element Plus 变量体系", "整屏媒体位 + 底部渐隐文字层"],
+      "viewport": "一屏一个科目，右侧竖排「收藏/练习/详情」三个图标，底部作者行位置放考期与题量。",
+      "case": "融合失败：20 个科目要滑 20 屏，级别分组这个最要紧的事实被彻底藏起来；学习平台的首屏不是消遣流。",
+      "risk": "把「有什么」变成一个只能顺序发现的问题。",
+      "kept": "段落级落位——每屏只讲一个完整状态，不做半截滚动位。",
+      "hero": "https://impeccable.style/worlds/cards/pop-culture-shelf-vertical-video-feed-surface-hero.webp"
+    },
+    {
+      "id": "challenger-oscilloscope",
+      "label": "示波器信号台",
+      "verdict": "declined",
+      "lineage": "信号台上的示波器：荧光迹线跑在刻度网上",
+      "thesis": "每个数字都对着同一张刻度网读出来。",
+      "palette": ["#2a72c2", "#303133", "#f5f7fa", "#dcdfe6"],
+      "materials": ["Element Plus 变量体系（荧光绿不在承诺里）", "十格刻度网 + 等宽数字读数"],
+      "viewport": "整屏一张刻度网，科目作为不同通道叠在同一张网上，读数在下方排成一行。",
+      "case": "融合失败：要追踪的迹线是学习曲线，那是 P6 统计页的活；题库现在 0 道，网上没有任何东西可读。",
+      "risk": "没有迹线时，刻度网只是装饰。",
+      "kept": "数字共用栅格与口径——读数只出现可比数值，不写形容词。",
+      "hero": "https://impeccable.style/worlds/cards/scientific-notation-oscilloscope-signal-bench-hero.webp"
+    },
+    {
+      "id": "challenger-hypercard",
+      "label": "卡片堆",
+      "verdict": "declined",
+      "lineage": "HyperCard 卡片堆：用按钮互相跳转的卡片盒",
+      "thesis": "读和写是同一个对象的两种模式。",
+      "palette": ["#2a72c2", "#303133", "#f5f7fa", "#dcdfe6"],
+      "materials": ["Element Plus 变量体系（一位黑与网点灰不在承诺里）", "卡片边框 + 手绘感按钮"],
+      "viewport": "一叠卡片，当前卡是科目，按钮跳到章节卡、知识点卡。",
+      "case": "融合失败：真正有价值的「读者即作者」属于管理端审核工作台（读题即改题），不属于考生端首页。",
+      "risk": "复古外观与已钉住的世界冲突，换掉外观后它只剩普通卡片导航。",
+      "kept": "每层下钻可寻址——每个状态都有自己的地址，后退精确回到上一步。",
+      "hero": "https://impeccable.style/worlds/cards/medium-native-hypercard-stack-shoebox-hero.webp"
+    },
+    {
+      "id": "challenger-cyclorama",
+      "label": "天幕光幕",
+      "verdict": "declined",
+      "lineage": "剧场天幕：一夜到天明的光色分层",
+      "thesis": "用光色层讲时间推进。",
+      "palette": ["#2a72c2", "#303133", "#f5f7fa", "#dcdfe6"],
+      "materials": ["Element Plus 变量体系（钴蓝玫瑰色不在承诺里）", "横向色带由深到浅堆叠"],
+      "viewport": "首屏是一叠由深到浅的色带，代表考期推进。",
+      "case": "融合失败：光色是气氛，不是事实；考期的信息量（6/7/7）用文字一行就说完了。",
+      "risk": "把可核对的事实降级成情绪。",
+      "kept": "色不独担信息——状态永远同时有文字与位置，颜色只是第三重。",
+      "hero": "https://impeccable.style/worlds/cards/stagecraft-theater-lighting-cyclorama-dawn-hero.webp"
+    },
+    {
+      "id": "challenger-tensegrity",
+      "label": "张拉整体柱",
+      "verdict": "declined",
+      "lineage": "张拉整体结构：每一根受压的杆都能追到一根受拉的索",
+      "thesis": "每个量都能追到它的出处。",
+      "palette": ["#2a72c2", "#303133", "#f5f7fa", "#dcdfe6"],
+      "materials": ["Element Plus 变量体系（碳黑与红索不在承诺里）", "力线标注 + 引线连接到节点"],
+      "viewport": "一张力网，节点是知识点，连线是覆盖关系。",
+      "case": "融合失败：要追的负载是「这个薄弱点由哪些题撑着」，那要等题库和答题记录存在（P4/P6）。",
+      "risk": "空网开会比空表更难看——连线断了就是断的。",
+      "kept": "口径可追溯——每个数字标明它量的是什么，并列的口径绝不混用。",
+      "hero": "https://impeccable.style/worlds/cards/kinetic-sculpture-automata-tensegrity-breathing-column-hero.webp"
+    }
+  ],
+  "reroll": { "registers": ["safer", "bolder"] },
+  "buildPath": { "value": "code" },
+  "steer": true
+}

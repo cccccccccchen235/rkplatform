@@ -1,0 +1,12 @@
+{
+  // 不给 node 侧用 @vue/tsconfig/tsconfig.dom.json：那是给浏览器代码的（lib 含 DOM）。
+  // 用它的基础配置再补 node 的类型即可——@vue/tsconfig 0.7 没有单独的 node 变体。
+  "extends": "@vue/tsconfig/tsconfig.json",
+  "include": ["vite.config.ts", "eslint.config.js"],
+  "compilerOptions": {
+    "composite": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "lib": ["ES2023"],
+    "types": ["node"]
+  }
+}

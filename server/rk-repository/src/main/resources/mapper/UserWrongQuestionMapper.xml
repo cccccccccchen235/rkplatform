@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruankao.repository.mapper.UserWrongQuestionMapper">
+
+    <!--
+      列表行的列名显式写出（理由见 SubjectMapper.xml）。
+      stem_summary ≠ stem：列表只展示一句摘要，题干是 MEDIUMTEXT 级 Markdown/KaTeX，
+      整段取出会撑大响应；截断在 SQL 里一次做完，服务端与前端都不再处理。
+      别名 stem_summary 经 mapUnderscoreToCamelCase 映射到 VO 的 stemSummary。
+    -->
+    <sql id="wrongQuestionRowColumns">
+        w.question_id,
+        q.outline_id,
+        LEFT(q.stem, 120) AS stem_summary,
+        w.wrong_count,
+        w.correct_count,
+        w.consecutive_correct,
+        w.last_answered_at,
+        w.status
+    </sql>
+
+    <!--
+      FROM 片段在 selectPage / countPage 间复用。
+      kpId 非 null 才 JOIN rk_question_kp：uk_question_kp(question_id, kp_id) 保证
+      一个 (题, 标签) 至多一行，故按 kp_id 过滤不会让错题行翻倍，无需 DISTINCT。
+    -->
+    <sql id="wrongQuestionFrom">
+        FROM user_wrong_question w
+        JOIN rk_question q ON q.id = w.question_id
+        <if test="kpId != null">
+            JOIN rk_question_kp qk ON qk.question_id = w.question_id
+        </if>
+    </sql>
+
+    <!--
+      过滤条件在 selectPage / countPage 间复用，保证列表与总数口径逐字一致——
+      两处各写一遍是"数得出来的总数与看得到的行对不上"的经典来源。
+      status 未传时落到契约默认值 ACTIVE（05 §5.7 第 26 条）；用 <choose> 而不是
+      把默认值塞进参数，是为了让"默认 ACTIVE"这条规则只存在于 SQL 一处。
+      outlineId 过滤打在 rk_question.outline_id（题目当前叶子章节）上。
+    -->
+    <sql id="wrongQuestionFilters">
+        <where>
+            w.user_id = #{userId}
+            AND w.subject_id = #{subjectId}
+            <choose>
+                <when test="status != null and status != ''">
+                    AND w.status = #{status}
+                </when>
+                <otherwise>
+                    AND w.status = 'ACTIVE'
+                </otherwise>
+            </choose>
+            <if test="outlineId != null">
+                AND q.outline_id = #{outlineId}
+            </if>
+            <if test="kpId != null">
+                AND qk.kp_id = #{kpId}
+            </if>
+        </where>
+    </sql>
+
+    <!--
+      答错收录：INSERT ... ON DUPLICATE KEY UPDATE。
+      INSERT 分支显式给全 wrong_count=1 / correct_count=0 / consecutive_correct=0 /
+      status='ACTIVE'，不依赖 DDL 默认值——默认值只对"INSERT 未列出的列"生效，
+      把语义写在这里，读代码的人不必回翻 DDL 才能确认首次入库的初值。
+      UPDATE 分支无条件置 status='ACTIVE'：又答错即视为"未掌握"，原 MASTERED/REMOVED
+      都被拉回可用列表（04 §4.3、06 §6.8）。
+    -->
+    <insert id="upsertOnWrong">
+        INSERT INTO user_wrong_question
+            (user_id, question_id, subject_id,
+             wrong_count, correct_count, consecutive_correct, last_answered_at, status)
+        VALUES
+            (#{userId}, #{questionId}, #{subjectId},
+             1, 0, 0, #{answeredAt}, 'ACTIVE')
+        ON DUPLICATE KEY UPDATE
+            wrong_count          = wrong_count + 1,
+            consecutive_correct  = 0,
+            last_answered_at     = VALUES(last_answered_at),
+            status               = 'ACTIVE'
+    </insert>
+
+    <!--
+      答对累加：**只 UPDATE，绝不 INSERT**——一道从没答错的题，一次答对不该把它
+      拉进错题本；也无 INSERT 分支，故这里不会出现"凭空建行"。
+      WHERE status <> 'REMOVED'：用户手动移出的意愿优先于自动流转，绝不改 REMOVED 行。
+
+      注意 MySQL 的 SET 赋值从左到右求值，后面的赋值能读到前面刚写好的新值。
+      所以 status 这一句必须排在 consecutive_correct 之前：它读的是"旧值 + 1"。
+      若把 status 挪到 consecutive_correct 之后，consecutive_correct + 1 就会读到
+      已经被自增过的值，导致阈值实际提前一步触发（差一错误，且在升级阈值时最难察觉）。
+    -->
+    <update id="upsertOnCorrect">
+        UPDATE user_wrong_question
+        SET status = CASE
+                WHEN consecutive_correct + 1 &gt;= #{threshold} THEN 'MASTERED'
+                ELSE status
+            END,
+            consecutive_correct = consecutive_correct + 1,
+            correct_count       = correct_count + 1,
+            last_answered_at    = #{answeredAt}
+        WHERE user_id = #{userId}
+          AND question_id = #{questionId}
+          AND status &lt;&gt; 'REMOVED'
+    </update>
+
+    <!-- 手动移出（05 §5.7 第 27 条）：只置状态，保留计数与数据，便于恢复与审计 -->
+    <update id="markRemoved">
+        UPDATE user_wrong_question
+        SET status = 'REMOVED'
+        WHERE user_id = #{userId}
+          AND question_id = #{questionId}
+    </update>
+
+    <!--
+      恢复（05 §5.7 第 28 条）：ACTIVE 且连续计数归零。
+      两条 SET 互不依赖，顺序无影响；归零的理由见接口 javadoc（保留旧连续数会让
+      一次答对立刻重新 MASTERED，恢复动作失效）。
+    -->
+    <update id="restore">
+        UPDATE user_wrong_question
+        SET status = 'ACTIVE',
+            consecutive_correct = 0
+        WHERE user_id = #{userId}
+          AND question_id = #{questionId}
+    </update>
+
+    <!--
+      分页列表。排序必须带 id DESC 兜底：last_answered_at 相同（同一批提交）时若只按
+      时间排序，翻页会出现"同一行重复/漏出"，加唯一列作次键才能得到稳定顺序。
+    -->
+    <select id="selectPage" resultType="com.ruankao.domain.vo.WrongQuestionRowVO">
+        SELECT
+        <include refid="wrongQuestionRowColumns"/>
+        <include refid="wrongQuestionFrom"/>
+        <include refid="wrongQuestionFilters"/>
+        ORDER BY
+        <choose>
+            <when test="sortBy == 'wrongCount'">
+                w.wrong_count DESC, w.id DESC
+            </when>
+            <otherwise>
+                w.last_answered_at DESC, w.id DESC
+            </otherwise>
+        </choose>
+        <!-- AC-4：分页查询的上界即必需的 limit 参数（调用方按接口分页上限收敛后传入） -->
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 与列表同一 FROM + 过滤条件，仅把列换成计数；结果恒为一行，不受 AC-4 约束 -->
+    <select id="countPage" resultType="long">
+        SELECT COUNT(*)
+        <include refid="wrongQuestionFrom"/>
+        <include refid="wrongQuestionFilters"/>
+    </select>
+
+</mapper>

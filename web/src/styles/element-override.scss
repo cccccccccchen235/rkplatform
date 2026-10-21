@@ -1,0 +1,152 @@
+// ===============================================================
+// Element Plus 主题定制（07 §7.9 + docs/18 的 F14）
+//
+// 改法：**只改运行期 CSS 变量**，不碰 Element Plus 的 SCSS。
+//
+// 为什么不用 @forward 'element-plus/theme-chalk/src/common/var.scss' with (...)
+// ——本文件上一版就是这么写的，而那是**死代码**：
+// ElementPlusResolver() 默认 importStyle = 'css'，按需引入拿到的是 element-plus 的
+// **预编译 CSS**（里面 --el-color-primary 已经算成字面量 #409eff），我们配置的 SCSS
+// 变量从头到尾没有参与那次编译。实测证据：把 @forward 里的 base 从 #409eff 改成
+// #2a72c2 后重新构建，产物里仍是 --el-color-primary:#409eff（docs/18 的 F14）。
+//
+// 运行期变量则一定生效——unplugin 引入的组件读的就是 var(--el-*)。级联上也站得住：
+// index.html 里 vendor-element 的 <link> 排在本项目 index CSS **之前**，同为
+// :root 特异度时后出现的那条胜出。
+//
+// 不写 `.el-card__body { ... }` 这类内部结构选择器——那是在依赖 Element Plus 的
+// 实现细节，升级时会以"样式莫名失效"的形式断裂，而报错信息不会指向这里。
+// 需要不同外观时优先用组件自己的 class / slot。
+// ===============================================================
+
+@use 'sass:color';
+@use 'sass:math';
+// partial 拿不到 additionalData 的注入，变量要自己引。
+@use './variables.scss' as *;
+
+// 把颜色落到整数 rgb 再输出。dart-sass 对"通道不是整数"的颜色会序列化成
+// `rgb(41.5294117647% 61.29…%)` —— 合法但没人愿意读，而且每个色档多出几十字节。
+@function rk-el-quantize($c) {
+  $r: math.round(color.channel($c, 'red', $space: rgb));
+  $g: math.round(color.channel($c, 'green', $space: rgb));
+  $b: math.round(color.channel($c, 'blue', $space: rgb));
+  @return rgb($r, $g, $b);
+}
+// Element Plus 的派生色档公式（theme-chalk/src/common/var.scss）：
+//   light-i = 白 与主色 按 i*10% 混合（权重给白）
+//   dark-i  = 黑 与主色 按 i*10% 混合（权重给黑）
+// 这里用**同一个公式现算**，而不是抄一份字面量——基色再变时它们自动跟着变。
+// 两个函数都收 `$base` 而不是闭包住 $rk-primary：主色与四个语义色共用同一套公式，
+// 抄成两份的话"改了公式只改了一处"就会变成一个新坑。
+@function rk-el-light($base, $weight) {
+  @return rk-el-quantize(color.mix(#ffffff, $base, $weight));
+}
+@function rk-el-dark($base, $weight) {
+  @return rk-el-quantize(color.mix(#000000, $base, $weight));
+}
+// --el-color-*-rgb 要的是 "r, g, b" 三段裸数字（Element Plus 用它拼
+// rgba(var(--el-color-primary-rgb), .1) 这类半透明底），不能直接给一个颜色。
+@function rk-el-rgb-triplet($c) {
+  $q: rk-el-quantize($c);
+  @return '#{color.channel($q, "red", $space: rgb)}, #{color.channel($q, "green", $space: rgb)}, #{color.channel($q, "blue", $space: rgb)}';
+}
+
+// 语义色族。**`error` 与 `danger` 必须给同一个值**：Element Plus 里
+// el-alert / el-message 读的是 --el-color-error，el-button / el-tag 读的是
+// --el-color-danger。只改一个，同一屏上就会出现两种红——正是下面
+// --el-text-color-secondary 那条注释说的"两种弱提示灰"问题，只是换成了红。
+// 取值与其对比度实测见 variables.scss 里 $rk-danger 那一段。
+$rk-semantic: (
+  success: $rk-success,
+  warning: $rk-warning,
+  danger: $rk-danger,
+  error: $rk-danger,
+  info: $rk-info,
+);
+
+:root {
+  // ---- 主色与它的派生档 ----
+  // 这些是 Element Plus 组件的取色来源。不覆盖它们，组件仍按 07 §7.9 的
+  // #409eff 上色——而那个值在白底只有 2.78:1，见 variables.scss 与 F14。
+  --el-color-primary: #{$rk-primary};
+  --el-color-primary-rgb: #{rk-el-rgb-triplet($rk-primary)};
+  --el-color-primary-light-3: #{rk-el-light($rk-primary, 30%)};
+  --el-color-primary-light-5: #{rk-el-light($rk-primary, 50%)};
+  --el-color-primary-light-7: #{rk-el-light($rk-primary, 70%)};
+  --el-color-primary-light-8: #{rk-el-light($rk-primary, 80%)};
+  --el-color-primary-light-9: #{rk-el-light($rk-primary, 90%)};
+  --el-color-primary-dark-2: #{rk-el-dark($rk-primary, 20%)};
+
+  // ---- 语义色与它们的派生档 ----
+  // 与主色同理：不覆盖，组件就用 Element Plus 的默认值 #67c23a / #e6a23c /
+  // #f56c6c / #909399，四个都过不了对比度底线（实测数字见 variables.scss）。
+  // 派生档**必须一起算**：浅底（-light-9）是 el-alert / el-tag / el-message 的
+  // 背景色，只换基色不换浅底，浅底就仍是照着旧基色混出来的那一档。
+  @each $name, $base in $rk-semantic {
+    --el-color-#{$name}: #{$base};
+    --el-color-#{$name}-rgb: #{rk-el-rgb-triplet($base)};
+    --el-color-#{$name}-light-3: #{rk-el-light($base, 30%)};
+    --el-color-#{$name}-light-5: #{rk-el-light($base, 50%)};
+    --el-color-#{$name}-light-7: #{rk-el-light($base, 70%)};
+    --el-color-#{$name}-light-8: #{rk-el-light($base, 80%)};
+    --el-color-#{$name}-light-9: #{rk-el-light($base, 90%)};
+    --el-color-#{$name}-dark-2: #{rk-el-dark($base, 20%)};
+  }
+
+  // ---- 字号与文字色 ----
+  --el-font-size-base: #{$rk-font-s};
+  --el-text-color-primary: #{$rk-text-1};
+  --el-text-color-regular: #{$rk-text-2};
+  --el-text-color-placeholder: #{$rk-text-3};
+  // Element 的 secondary 默认也是 #909399，和 $rk-text-3 原来那个值同色。
+  // 必须一起换成 $rk-text-3，否则同一屏里会出现两种"弱提示灰"——
+  // 而且留下的那一种正是过不了 4.5:1 的那个（docs/18 的 F11）。
+  --el-text-color-secondary: #{$rk-text-3};
+
+  --el-border-color-base: #{$rk-border};
+  --el-border-radius-base: #{$rk-radius-m};
+  --el-font-family: inherit;
+}
+
+// el-alert 的浅色档：由"语义色文字 + 语义色 9 号浅底"改成**白色板 + 1px 线**。
+//
+// 两个理由，缺一不可：
+// ① 底色。浅底的 L≈0.85，语义色文字压上去的对比度比压在纯白上低一档；而 9 号浅底
+//    与卡片白（$rk-bg-card）在屏幕上只差一点点，为这点差别牺牲对比度不划算。
+//    实测：主色文字压在 error 浅底（#f7eaea）上是 4.18:1，压在纯白上 4.90:1——
+//    "重试"那个 text 按钮正好卡在这条线上，白底把它救回来了。
+// ② DESIGN.md 的世界里没有彩色面板：深度只由 1px 线和留白表达（The Board-Not-Shadow
+//    Rule / The Shape-Carries-The-Encoding Rule）。语义由**图标形状 + 文字**承载，
+//    不靠整块底色——一整屏找不出第二处彩色填充，只有这里例外才奇怪。
+// 覆盖 `--el-alert-bg-color` 与直接给 `background-color` 各做一次：前者是 .el-alert--error
+// 那一层声明的（特异度更低），后者是 .el-alert--error.is-light 那一层设的（同特异度，
+// 靠本文件在 vendor-element 之后加载取胜）。只做前者会留下"变量换了、背景没换"的假象。
+//
+// 不写 `.el-alert__title` / `.el-alert__description` 这类内部结构选择器（本文件首段的规矩）：
+// 它们没有自己的颜色，是从 .el-alert 根上继承的，所以改根就够。
+.el-alert.is-light {
+  --el-alert-bg-color: #{$rk-bg-card};
+  background-color: $rk-bg-card;
+  border: 1px solid $rk-border;
+}
+
+// 主按钮的悬停底色。
+//
+// Element Plus 默认把 hover 指向 `light-3`（主色混 30% 白），那是往**浅**走——
+// 白字压上去反而更不清楚。实测（logs/contrast.js）：light-3 在主色 #409eff 下
+// 白字只有 2.03:1，换成本项目的 #2a72c2 后也只有 2.87:1，两种主色都不达标。
+// 深色档 `dark-2` 才够：#2a72c2 → dark-2 是 6.91:1。
+//
+// active 不用改：Element Plus 的默认值本来就是 dark-2，所以按下与悬停同色。
+// 这是本条唯一的代价（两个状态没有区分度）——换来的是不发明一个 Element Plus
+// 没有导出的色档（它只导出 dark-2，没有 dark-3）。
+.el-button--primary:not(.is-text):not(.is-link) {
+  --el-button-hover-bg-color: var(--el-color-primary-dark-2);
+  --el-button-hover-border-color: var(--el-color-primary-dark-2);
+}
+
+// el-card 默认内边距偏松，管理端表格页一屏放不下几行；收紧到本项目的间距刻度。
+.el-card {
+  --el-card-padding: #{$rk-space-l};
+  border-radius: $rk-radius-l;
+}

@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruankao.repository.mapper.QuestionMapper">
+
+    <!--
+      列名全部显式写出，不用 SELECT *：与 mapUnderscoreToCamelCase 配合完成
+      question_type -> questionType 的映射（实体在 rk-domain，不能挂 @TableName/@TableField）。
+    -->
+    <sql id="questionColumns">
+        q.id,
+        q.subject_id,
+        q.outline_id,
+        q.question_type,
+        q.stem,
+        q.stem_format,
+        q.images,
+        q.correct_answer,
+        q.reference_answer,
+        q.analysis,
+        q.score_points,
+        q.difficulty,
+        q.source_type,
+        q.source_ref,
+        q.source_license,
+        q.generation_batch_id,
+        q.status,
+        q.version,
+        q.created_by,
+        q.reviewed_by,
+        q.reviewed_at,
+        q.published_at,
+        q.created_at,
+        q.updated_at
+    </sql>
+
+    <!--
+      AC-5：**只有 PUBLISHED 的题可以入卷**（10 的硬约束）。
+      这条片段被六种练习模式的取题 SQL 共用，就是为了让"某个模式漏写 PUBLISHED"
+      这件事在结构上不可能发生——那种缺陷只会表现为"某个模式下能看到草稿题"，
+      很难在验收里被逐模式发现。
+    -->
+    <sql id="publishedPredicate">
+        q.status = 'PUBLISHED'
+    </sql>
+
+    <!--
+      练习候选池的两个**可选**过滤器。只有那 5 个"随机取题"的方法带这两个参数，
+      顺序练习（游标前移）刻意不带——它一旦过滤，题号会出现空洞（见 QuestionMapper 的说明）。
+
+      ① onlyUnmastered（05 §5.5 第 12 条：掌握度 < 0.6 才算"未掌握"）
+         口径：只要该题关联到**任一**个已达 0.6 的知识点，就整题排除。
+         另一条可能的口径是"全部关联知识点都达 0.6 才排除"，但那会让一道同时挂着
+         "已掌握"与"很薄弱"两个标签的题继续出现——而用户勾选这个开关的动机正是
+         "别再给我已经会的"，所以取"任一命中即排除"。
+         0.6 沿用文档口径，不读 sys_config：该值是 05 契约里写死的过滤边界，
+         与 wrongbook.master.threshold 那种"可调体验参数"不同（06 §6.10.1）。
+
+      ② difficulty（05 §5.5 第 12 条的 difficulty 入参）
+         题目难度 1~5（04 §4.4），{@code null} = 不过滤。
+    -->
+    <sql id="poolFilters">
+        <if test="onlyUnmastered">
+            AND NOT EXISTS (
+                SELECT 1
+                FROM rk_question_kp qk
+                JOIN stat_user_kp sk ON sk.kp_id = qk.kp_id AND sk.user_id = #{userId}
+                WHERE qk.question_id = q.id
+                  AND sk.mastery &gt;= 0.6
+            )
+        </if>
+        <if test="difficulty != null">
+            AND q.difficulty = #{difficulty}
+        </if>
+    </sql>
+
+    <!--
+      空集合短路。`IN ()` 是语法错误而不是"匹配不到"，直接抛出去会把一次
+      "该范围暂无题目"的空态变成 500。用 1 = 0 让语义落到"池子为空"，
+      由上层返回空态（07 前端：`total = 0` → 「该范围暂无题目」）。
+    -->
+    <sql id="emptyInGuard">
+        <if test="outlineIds == null or outlineIds.isEmpty()">
+            AND 1 = 0
+        </if>
+        <if test="outlineIds != null and !outlineIds.isEmpty()">
+            AND q.outline_id IN
+            <foreach collection="outlineIds" item="oid" open="(" separator="," close=")">
+                #{oid}
+            </foreach>
+        </if>
+    </sql>
+
+    <!-- SAMPLE：全科目随机（游客 count ≤ 5，由服务层把关） -->
+    <select id="selectRandomBySubject" resultType="com.ruankao.domain.entity.Question">
+        SELECT <include refid="questionColumns"/>
+        FROM rk_question q
+        WHERE q.subject_id = #{subjectId}
+          AND <include refid="publishedPredicate"/>
+        <include refid="poolFilters"/>
+        ORDER BY RAND()
+        LIMIT #{limit}
+    </select>
+
+    <!-- CHAPTER：按章节（含子孙，outlineIds 由服务层从大纲树缓存展开） -->
+    <select id="selectRandomByOutlines" resultType="com.ruankao.domain.entity.Question">
+        SELECT <include refid="questionColumns"/>
+        FROM rk_question q
+        WHERE q.subject_id = #{subjectId}
+          AND <include refid="publishedPredicate"/>
+        <include refid="emptyInGuard"/>
+        <include refid="poolFilters"/>
+        ORDER BY RAND()
+        LIMIT #{limit}
+    </select>
+
+    <!-- KP：按知识点 -->
+    <select id="selectRandomByKp" resultType="com.ruankao.domain.entity.Question">
+        SELECT <include refid="questionColumns"/>
+        FROM rk_question q
+        JOIN rk_question_kp qk ON qk.question_id = q.id AND qk.kp_id = #{kpId}
+        WHERE q.subject_id = #{subjectId}
+          AND <include refid="publishedPredicate"/>
+        <include refid="poolFilters"/>
+        ORDER BY RAND()
+        LIMIT #{limit}
+    </select>
+
+    <!--
+      SEQUENCE：顺序取，不随机（06 §6.6.3「按 id ASC 且 id > fromSequence 顺序取」）。
+      q.id 同时充当"题序"，故 nextSequence 直接取本页最后一题的 id（05 §5.5 的响应字段）。
+    -->
+    <select id="selectBySequence" resultType="com.ruankao.domain.entity.Question">
+        SELECT <include refid="questionColumns"/>
+        FROM rk_question q
+        WHERE q.subject_id = #{subjectId}
+          AND <include refid="publishedPredicate"/>
+          <if test="fromSequence != null">
+              AND q.id &gt; #{fromSequence}
+          </if>
+        ORDER BY q.id ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- FAVORITE：收藏池随机 -->
+    <select id="selectRandomByFavorite" resultType="com.ruankao.domain.entity.Question">
+        SELECT <include refid="questionColumns"/>
+        FROM rk_question q
+        JOIN user_favorite f ON f.question_id = q.id AND f.user_id = #{userId}
+        WHERE q.subject_id = #{subjectId}
+          AND <include refid="publishedPredicate"/>
+        <include refid="poolFilters"/>
+        ORDER BY RAND()
+        LIMIT #{limit}
+    </select>
+
+    <!--
+      WRONG_REDO：错题本 ACTIVE 的题，**错得多的优先**（06 §6.6.3）。
+      同错次数用 RAND() 打散：否则每次重做都从同一道开始，用户会以为错题本没变化。
+    -->
+    <select id="selectRandomByWrong" resultType="com.ruankao.domain.entity.Question">
+        SELECT <include refid="questionColumns"/>
+        FROM rk_question q
+        JOIN user_wrong_question w ON w.question_id = q.id AND w.user_id = #{userId}
+        WHERE q.subject_id = #{subjectId}
+          AND <include refid="publishedPredicate"/>
+          AND w.status = 'ACTIVE'
+        <include refid="poolFilters"/>
+        ORDER BY w.wrong_count DESC, RAND()
+        LIMIT #{limit}
+    </select>
+
+    <!--
+      候选池题量。与取题共用 publishedPredicate / poolFilters / emptyInGuard，
+      使"进度条分母"与"实际能取到的题"口径一致（分叉的表现是"显示 30 题、只出 12 题"）。
+      各 mode 的 JOIN 与选择条件逐字对应 selectRandomBy* / selectBySequence。
+    -->
+    <select id="countPracticePool" resultType="long">
+        SELECT COUNT(*)
+        FROM rk_question q
+        <choose>
+            <when test="mode == 'KP'">
+                JOIN rk_question_kp qk ON qk.question_id = q.id AND qk.kp_id = #{refId}
+            </when>
+            <when test="mode == 'FAVORITE'">
+                JOIN user_favorite f ON f.question_id = q.id AND f.user_id = #{userId}
+            </when>
+            <when test="mode == 'WRONG_REDO'">
+                JOIN user_wrong_question w ON w.question_id = q.id AND w.user_id = #{userId}
+            </when>
+        </choose>
+        WHERE q.subject_id = #{subjectId}
+          AND <include refid="publishedPredicate"/>
+        <if test="mode == 'CHAPTER'">
+            <include refid="emptyInGuard"/>
+        </if>
+        <if test="mode == 'WRONG_REDO'">
+            AND w.status = 'ACTIVE'
+        </if>
+        <!-- 顺序练习的池是"全部已发布题"：游标只前进，不做任何过滤 -->
+        <if test="mode != 'SEQUENCE'">
+            <include refid="poolFilters"/>
+        </if>
+    </select>
+
+    <!--
+      按 ID 回读：答题上报时的**服务端权威取题入口**（AC-3）。
+      这里不校验 subject_id——上报的 items 只带 questionId，科目一致性由服务层的
+      请求级 subjectId 与题目的 subject_id 比对后判定（不匹配要拒绝，见 PracticeService）。
+    -->
+    <select id="selectByIds" resultType="com.ruankao.domain.entity.Question">
+        SELECT <include refid="questionColumns"/>
+        FROM rk_question q
+        <if test="ids == null or ids.isEmpty()">
+            WHERE 1 = 0
+        </if>
+        <if test="ids != null and !ids.isEmpty()">
+            WHERE q.id IN
+            <foreach collection="ids" item="qid" open="(" separator="," close=")">
+                #{qid}
+            </foreach>
+        </if>
+    </select>
+
+    <!-- 选项：按 sort_no 升序，保证 A/B/C/D 的展示顺序与库里一致 -->
+    <select id="selectOptionsByQuestionIds" resultType="com.ruankao.domain.entity.QuestionOption">
+        SELECT
+            o.id,
+            o.question_id,
+            o.option_key,
+            o.content,
+            o.sort_no
+        FROM rk_question_option o
+        <if test="ids == null or ids.isEmpty()">
+            WHERE 1 = 0
+        </if>
+        <if test="ids != null and !ids.isEmpty()">
+            WHERE o.question_id IN
+            <foreach collection="ids" item="qid" open="(" separator="," close=")">
+                #{qid}
+            </foreach>
+        </if>
+        ORDER BY o.question_id ASC, o.sort_no ASC, o.id ASC
+    </select>
+
+    <!-- 题目 → 知识点标签；只取 ENABLED（考生端看不到已停用标签，05 §5.2） -->
+    <select id="selectKnowledgePointsByQuestionIds" resultType="com.ruankao.domain.vo.QuestionKpRowVO">
+        SELECT
+            qk.question_id AS question_id,
+            kp.id          AS kp_id,
+            kp.name        AS kp_name
+        FROM rk_question_kp qk
+        JOIN rk_knowledge_point kp ON kp.id = qk.kp_id
+        WHERE kp.status = 'ENABLED'
+        <if test="ids == null or ids.isEmpty()">
+            AND 1 = 0
+        </if>
+        <if test="ids != null and !ids.isEmpty()">
+            AND qk.question_id IN
+            <foreach collection="ids" item="qid" open="(" separator="," close=")">
+                #{qid}
+            </foreach>
+        </if>
+        ORDER BY qk.question_id ASC, kp.id ASC
+    </select>
+
+</mapper>

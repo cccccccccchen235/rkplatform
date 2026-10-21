@@ -1,0 +1,49 @@
+# 数值一致性 + 语料目录纯净 —— 收口 10 §10.2 的「数值一致性」验收项与 15 的 L7。
+#
+# ⚠️ 本项目按 23 §1 的前提**在本地完成，不上传仓库**：本文件在本地**一次都不会执行**。
+#    保留它是因为 YAML 本身是"必须断言什么"的有效记录（删掉等于丢掉这份清单）。
+#    真正生效的执行入口是 `scripts/verify/run-all.cmd`（本地一键门禁，见 23 §4.2）——
+#    **不要**因为"配了 CI"就认为门禁已经有了。
+#
+# 为什么不合并进 09 §9.8 的 ci.yml：那条流水线负责 server/web 的构建与镜像（需要
+# secrets、packages 权限、MySQL service），本文件只跑两个不依赖任何凭据的纯文本断言。
+# 拆分后本文件可在 fork / PR 上无条件跑，且 docs / deploy/sql 的改动不必等构建。
+#
+# 两个断言都**不需要数据库、不需要网络、不需要任何凭据**（AC-1）。
+
+name: consistency
+
+on:
+  push:
+    paths:
+      - 'docs/**'
+      - 'deploy/sql/**'
+      - 'scripts/verify/**'
+      - '.github/workflows/consistency.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'deploy/sql/**'
+      - 'scripts/verify/**'
+      - '.github/workflows/consistency.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  numeric-consistency:
+    name: 数值一致性（表数量 / 科目数）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 断言文档与 SQL 里的复写数字与产物一致
+        run: bash scripts/verify/check-numeric-consistency.sh
+
+  no-corpus-files:
+    name: GR-1 语料目录纯净
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 断言 scripts/generate/ 无真题语料文件
+        run: bash scripts/verify/check-no-corpus-files.sh

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruankao.repository.mapper.ExamSessionItemMapper">
+
+    <sql id="itemColumns">
+        t.id, t.session_id, t.section_no, t.sequence, t.question_id, t.question_type,
+        t.stem_snapshot, t.options_snapshot, t.correct_answer, t.reference_snapshot,
+        t.analysis_snapshot, t.score, t.user_answer, t.is_correct, t.duration_ms, t.answered_at
+    </sql>
+
+    <!-- 组卷时一次性写入全卷题目快照（含题干/选项/正确答案；参考答案留给交卷）。 -->
+    <insert id="insertBatch" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO exam_session_item
+            (session_id, section_no, sequence, question_id, question_type, stem_snapshot,
+             options_snapshot, correct_answer, score, user_answer, is_correct, duration_ms, answered_at)
+        VALUES
+        <foreach collection="rows" item="r" separator=",">
+            (#{r.sessionId}, #{r.sectionNo}, #{r.sequence}, #{r.questionId}, #{r.questionType},
+             #{r.stemSnapshot}, #{r.optionsSnapshot}, #{r.correctAnswer}, #{r.score},
+             #{r.userAnswer}, #{r.isCorrect}, #{r.durationMs}, #{r.answeredAt})
+        </foreach>
+    </insert>
+
+    <select id="selectBySession" resultType="com.ruankao.domain.entity.ExamSessionItem">
+        SELECT <include refid="itemColumns"/>
+        FROM exam_session_item t
+        WHERE t.session_id = #{sessionId}
+        ORDER BY t.sequence
+    </select>
+
+    <!--
+      按 itemId 回读并同时限定 session_id：这就是 4006 的判据——
+      "这条 item 不属于该会话"与"itemId 不存在"合并成同一件事，避免既回读又校验两次。
+    -->
+    <select id="selectByIds" resultType="com.ruankao.domain.entity.ExamSessionItem">
+        SELECT <include refid="itemColumns"/>
+        FROM exam_session_item t
+        WHERE t.session_id = #{sessionId}
+          AND t.id IN
+          <foreach collection="ids" item="id" open="(" separator="," close=")">
+              #{id}
+          </foreach>
+    </select>
+
+    <update id="updateAnswer">
+        UPDATE exam_session_item
+        SET user_answer = #{userAnswer},
+            duration_ms = #{durationMs},
+            answered_at = #{answeredAt}
+        WHERE id = #{id}
+          AND session_id = #{sessionId}
+    </update>
+
+    <!--
+      交卷判分：对错、得分与主观题的参考答案/解析快照一次写入。
+      reference/analysis 只在交卷时搬运，避免组卷时为每道题复制一遍大字段（02 §2.4.3）。
+    -->
+    <update id="updateJudgement">
+        UPDATE exam_session_item
+        SET is_correct = #{isCorrect},
+            score = #{score},
+            reference_snapshot = #{reference},
+            analysis_snapshot = #{analysis}
+        WHERE id = #{id}
+    </update>
+
+</mapper>

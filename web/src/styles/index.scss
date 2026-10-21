@@ -1,0 +1,96 @@
+// 样式总入口，只在 main.ts 里引入一次。
+// 顺序有意义：reset 先把浏览器默认值压平，element-override 再把 Element Plus
+// 的变量种进去，最后才是本项目的通用类。
+
+@use './reset.scss';
+@use './element-override.scss';
+
+// 07 §7.9 要求设计变量"同时映射为 CSS 变量供运行时使用"。
+// 映射放在这里而不是 variables.scss：后者被 additionalData 注入每个组件，
+// 写在那里的 :root 块会被复制 N 份（见 variables.scss 顶部说明）。
+:root {
+  --rk-primary: #{$rk-primary};
+  --rk-success: #{$rk-success};
+  --rk-warning: #{$rk-warning};
+  --rk-danger: #{$rk-danger};
+  --rk-info: #{$rk-info};
+
+  --rk-text-1: #{$rk-text-1};
+  --rk-text-2: #{$rk-text-2};
+  --rk-text-3: #{$rk-text-3};
+
+  --rk-border: #{$rk-border};
+  --rk-bg-page: #{$rk-bg-page};
+  --rk-bg-card: #{$rk-bg-card};
+
+  --rk-space-xs: #{$rk-space-xs};
+  --rk-space-s: #{$rk-space-s};
+  --rk-space-m: #{$rk-space-m};
+  --rk-space-l: #{$rk-space-l};
+  --rk-space-xl: #{$rk-space-xl};
+
+  --rk-radius-s: #{$rk-radius-s};
+  --rk-radius-m: #{$rk-radius-m};
+  --rk-radius-l: #{$rk-radius-l};
+
+  --rk-content-max-width: #{$rk-content-max-width};
+}
+
+// 内容区容器：全站统一的居中宽度，页面里不要各自写 max-width。
+.rk-container {
+  width: 100%;
+  max-width: $rk-content-max-width;
+  margin: 0 auto;
+  padding: 0 $rk-space-xl;
+}
+
+// 页面级标题，用于各页 <h1>。
+.rk-page-title {
+  font-size: $rk-font-xl;
+  font-weight: 600;
+  color: $rk-text-1;
+  margin-bottom: $rk-space-l;
+}
+
+// ===============================================================
+// 浏览器自带的界面也是页面的一部分：选中色、光标、滚动条。
+//
+// 这一页在 1280 基准宽下**常驻一条横向滚动条**（body 有 min-width:1280px，
+// 再减去纵向滚动条后内容区不足 1280），所以它不是偶尔出现的系统部件，
+// 而是一块始终可见、被刻意设计围绕的面积——留成 OS 默认灰等于没做。
+// ===============================================================
+
+// 选中：淡主色底 + 不变字色。不用"主色实底 + 白字"——保留原字色可以让被选中的
+// 正文继续保有 $rk-text-1 的对比度，而不是被换成主色与白字之比。
+// 底色由 $rk-primary 算出来，不写死色值：F14 换过一次主色，写死的那个会被落下。
+::selection {
+  background-color: rgba($rk-primary, 0.25);
+  color: $rk-text-1;
+}
+
+// 输入光标：1px 的细线。用的是全站唯一的那个蓝（F14 起主色不再分"填充档 / 文字档"）。
+html {
+  caret-color: $rk-primary;
+  // Firefox
+  scrollbar-color: $rk-border $rk-bg-page;
+}
+
+// WebKit / Chromium
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: $rk-bg-page;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: $rk-border;
+  border: 3px solid $rk-bg-page;
+  border-radius: 6px;
+
+  &:hover {
+    background-color: $rk-text-3;
+  }
+}

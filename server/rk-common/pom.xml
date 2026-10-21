@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.ruankao</groupId>
+    <artifactId>ruankao-server</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>rk-common</artifactId>
+  <name>rk-common</name>
+  <description>通用能力：统一响应体、错误码、业务异常、分页 DTO、工具类。无 Spring Web 依赖。</description>
+
+  <dependencies>
+    <!-- 只允许 slf4j（打日志）与 jakarta.validation（DTO 注解），二者都不是 Web 依赖。 -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.validation</groupId>
+      <artifactId>jakarta.validation-api</artifactId>
+    </dependency>
+    <!-- PasswordHasher 用 Hutool 的 BCrypt（jBCrypt 移植，产出标准 $2a$ 哈希）。
+         选它而非 spring-security-crypto，是为了不给最底层模块引入 Spring 系依赖——
+         03 §3.2 技术栈表已包含 Hutool。 -->
+    <dependency>
+      <groupId>cn.hutool</groupId>
+      <artifactId>hutool-all</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- 只引 junit-jupiter，不引 spring-boot-starter-test：
+         本模块没有任何 Spring 上下文可测（它的价值恰恰在于"不依赖 Spring"），
+         引进来只会让 test classpath 里多出一堆用不上的东西。
+         版本由 spring-boot-starter-parent 经 junit-bom 统一管理。 -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-layering</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <searchTransitive>false</searchTransitive>
+                  <excludes>
+                    <!-- 06 §6.1：rk-common 禁止依赖任何其他 rk-* 模块（它是依赖链的末端） -->
+                    <exclude>com.ruankao:rk-domain</exclude>
+                    <exclude>com.ruankao:rk-repository</exclude>
+                    <exclude>com.ruankao:rk-service</exclude>
+                    <exclude>com.ruankao:rk-api</exclude>
+                    <exclude>com.ruankao:rk-boot</exclude>
+                    <!-- 06 §6.1：rk-common 禁止依赖 Spring Web -->
+                    <exclude>org.springframework.boot:spring-boot-starter-web</exclude>
+                    <exclude>org.springframework:spring-web</exclude>
+                    <exclude>org.springframework:spring-webmvc</exclude>
+                    <exclude>jakarta.servlet:jakarta.servlet-api</exclude>
+                  </excludes>
+                  <message>分层约束（06 §6.1）：rk-common 必须保持"无 Web 依赖、不依赖任何 rk-* 模块"。如果你需要在这里引用上层类型，说明该逻辑放错了模块。</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

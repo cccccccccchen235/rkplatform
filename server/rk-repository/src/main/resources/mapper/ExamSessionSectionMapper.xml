@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruankao.repository.mapper.ExamSessionSectionMapper">
+
+    <sql id="sectionColumns">
+        t.id, t.session_id, t.sitting_no, t.section_no, t.section_name, t.section_type,
+        t.question_count, t.max_score, t.objective_score, t.duration_min, t.duration_max,
+        t.allow_early_submit, t.support_status, t.used_sec, t.status, t.started_at, t.finished_at
+    </sql>
+
+    <insert id="insertBatch">
+        INSERT INTO exam_session_section
+            (session_id, sitting_no, section_no, section_name, section_type, question_count,
+             max_score, objective_score, duration_min, duration_max, allow_early_submit,
+             support_status, used_sec, status, started_at, finished_at)
+        VALUES
+        <foreach collection="rows" item="r" separator=",">
+            (#{r.sessionId}, #{r.sittingNo}, #{r.sectionNo}, #{r.sectionName}, #{r.sectionType},
+             #{r.questionCount}, #{r.maxScore}, #{r.objectiveScore}, #{r.durationMin}, #{r.durationMax},
+             #{r.allowEarlySubmit}, #{r.supportStatus}, #{r.usedSec}, #{r.status},
+             #{r.startedAt}, #{r.finishedAt})
+        </foreach>
+    </insert>
+
+    <select id="selectBySession" resultType="com.ruankao.domain.entity.ExamSessionSection">
+        SELECT <include refid="sectionColumns"/>
+        FROM exam_session_section t
+        WHERE t.session_id = #{sessionId}
+        ORDER BY t.section_no
+    </select>
+
+    <select id="selectOne" resultType="com.ruankao.domain.entity.ExamSessionSection">
+        SELECT <include refid="sectionColumns"/>
+        FROM exam_session_section t
+        WHERE t.session_id = #{sessionId}
+          AND t.section_no = #{sectionNo}
+        LIMIT 1
+    </select>
+
+    <update id="start">
+        UPDATE exam_session_section
+        SET status = 'IN_PROGRESS',
+            started_at = #{startedAt}
+        WHERE id = #{id}
+          AND status = 'PENDING'
+    </update>
+
+    <update id="finish">
+        UPDATE exam_session_section
+        SET status = #{status},
+            used_sec = #{usedSec},
+            finished_at = #{finishedAt}
+        WHERE id = #{id}
+    </update>
+
+    <!--
+      随场次结束：把本场次仍未结束的分节一起收尾，并按其 started_at 补算 used_sec
+      （不覆盖已经更大的既有值——用户提前离开过的分节保留真实用时）。
+    -->
+    <update id="finishSitting">
+        UPDATE exam_session_section
+        SET status = 'FINISHED',
+            finished_at = #{finishedAt},
+            used_sec = IF(started_at IS NULL, used_sec,
+                          GREATEST(used_sec, TIMESTAMPDIFF(SECOND, started_at, #{finishedAt})))
+        WHERE session_id = #{sessionId}
+          AND sitting_no = #{sittingNo}
+          AND status IN ('PENDING', 'IN_PROGRESS')
+    </update>
+
+    <update id="updateScore">
+        UPDATE exam_session_section
+        SET objective_score = #{objectiveScore}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateUsedSec">
+        UPDATE exam_session_section
+        SET used_sec = #{usedSec}
+        WHERE id = #{id}
+    </update>
+
+</mapper>

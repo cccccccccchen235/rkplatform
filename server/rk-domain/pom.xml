@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.ruankao</groupId>
+    <artifactId>ruankao-server</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>rk-domain</artifactId>
+  <name>rk-domain</name>
+  <description>领域层：实体、枚举、值对象。零框架依赖，不感知持久化与 Web。</description>
+
+  <!--
+    06 §6.1 明令 rk-domain 禁止依赖 MyBatis。这条禁令的直接后果是：
+    **实体类上不能出现 @TableName / @TableId 等 MyBatis-Plus 注解**，
+    因此 MyBatis-Plus 的注解驱动映射在本项目中不可用，Map 层一律使用
+    XML Mapper 显式书写 SQL 与列别名（03 §3.3.1 已把 XML 列入 rk-repository 的目录结构）。
+    这条约束是刻意的：实体保持为纯粹的数据载体，换持久化框架时领域层不动。
+  -->
+
+  <dependencies>
+    <dependency>
+      <groupId>com.ruankao</groupId>
+      <artifactId>rk-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-layering</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <searchTransitive>false</searchTransitive>
+                  <excludes>
+                    <exclude>com.ruankao:rk-repository</exclude>
+                    <exclude>com.ruankao:rk-service</exclude>
+                    <exclude>com.ruankao:rk-api</exclude>
+                    <exclude>com.ruankao:rk-boot</exclude>
+                    <!-- 06 §6.1：rk-domain 禁止依赖 MyBatis / MyBatis-Plus -->
+                    <exclude>org.mybatis:mybatis</exclude>
+                    <exclude>org.mybatis:mybatis-spring</exclude>
+                    <exclude>com.baomidou:mybatis-plus-spring-boot3-starter</exclude>
+                    <exclude>com.baomidou:mybatis-plus-core</exclude>
+                    <exclude>com.baomidou:mybatis-plus-extension</exclude>
+                    <!-- 06 §6.1：rk-domain 禁止依赖 Spring Web -->
+                    <exclude>org.springframework.boot:spring-boot-starter-web</exclude>
+                    <exclude>org.springframework:spring-web</exclude>
+                    <exclude>org.springframework:spring-webmvc</exclude>
+                    <exclude>jakarta.servlet:jakarta.servlet-api</exclude>
+                  </excludes>
+                  <message>分层约束（06 §6.1）：rk-domain 必须保持"零框架依赖"。特别是禁止 MyBatis——实体类上不允许出现 @TableName 之类的注解，映射请写进 rk-repository 的 XML Mapper。</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

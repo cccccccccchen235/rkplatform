@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruankao.repository.mapper.StatDailyMapper">
+
+    <!--
+      纯增量：命中 uk_user_date 时在已有值上累加，绝不覆盖。
+      这三列都是事件计数（"那天做了多少题/对多少/花多久"），没有跨天的去重语义，
+      重复答同一题就是两次事件——与 stat_user_outline 的"最近一次"口径刻意不同（06 §6.10.2）。
+    -->
+    <insert id="increment">
+        INSERT INTO stat_daily
+            (user_id, stat_date, answered_count, correct_count, duration_sec)
+        VALUES
+            (#{userId}, #{statDate}, #{answeredDelta}, #{correctDelta}, #{durationSecDelta})
+        ON DUPLICATE KEY UPDATE
+            answered_count = answered_count + VALUES(answered_count),
+            correct_count  = correct_count + VALUES(correct_count),
+            duration_sec   = duration_sec + VALUES(duration_sec)
+    </insert>
+
+</mapper>

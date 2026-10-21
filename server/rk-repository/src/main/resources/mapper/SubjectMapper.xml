@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruankao.repository.mapper.SubjectMapper">
+
+    <!--
+      列名全部显式写出，不用 SELECT *：
+        · 表结构变更时能让编译期的映射差异尽早暴露
+        · 与 mapUnderscoreToCamelCase 配合完成 paper_type -> paperType 的映射
+          （实体在 rk-domain，不能挂 @TableName/@TableField）
+    -->
+    <sql id="subjectColumns">
+        s.id,
+        s.level,
+        s.code,
+        s.name,
+        s.paper_type,
+        s.exam_period,
+        s.outline_status,
+        s.content_status,
+        s.intro,
+        s.question_count,
+        s.sort_no,
+        s.status,
+        s.created_at,
+        s.updated_at
+    </sql>
+
+    <!--
+      卷面满分取自 exam_paper_template。写成标量子查询而不是 LEFT JOIN：
+        · 唯一键 uk_subject(subject_id) 保证至多一行，但子查询把这个前提写死在
+          离使用点最近的地方，将来若放开"一科目多模板"也不会让科目行悄悄翻倍
+        · 不必给 FROM/WHERE 里的每一列补上 s. 前缀，也不会和 onlyConfigured 的
+          EXISTS 子句互相干扰
+      条件与 onlyConfigured 的 EXISTS 逐字一致（status = 'ENABLED'），
+      否则会出现"被 onlyConfigured 选中却算出 null 满分"的自相矛盾。
+    -->
+    <sql id="paperTotalScoreColumn">
+        (SELECT t.total_max_score
+           FROM exam_paper_template t
+          WHERE t.subject_id = s.id
+            AND t.status = 'ENABLED'
+          LIMIT 1) AS paper_total_score
+    </sql>
+
+    <!--
+      过滤掉 status = 'DISABLED' 的科目：下架科目对考生不存在，
+      与错误码 3001「科目不存在或已停用」保持一致。
+      level 与 onlyConfigured 都是可选条件，用 <if> 拼接而非传 NULL 比较，
+      后者会让 idx_level_sort 失效。
+    -->
+    <select id="selectSubjects" resultType="com.ruankao.domain.entity.Subject">
+        SELECT
+        <include refid="subjectColumns"/>,
+        <include refid="paperTotalScoreColumn"/>
+        FROM rk_subject s
+        <where>
+            s.status = 'ENABLED'
+            <if test="level != null and level != ''">
+                AND s.level = #{level}
+            </if>
+            <if test="onlyConfigured">
+                AND EXISTS (
+                    SELECT 1
+                    FROM exam_paper_template t
+                    WHERE t.subject_id = s.id
+                      AND t.status = 'ENABLED'
+                )
+            </if>
+        </where>
+        <!-- 组内按 sort_no 升序；分组顺序由 Service 按 SubjectLevel 声明序决定，不依赖 SQL -->
+        ORDER BY s.level ASC, s.sort_no ASC, s.id ASC
+        <!--
+          防御性硬上界（03 §3.8 AC-4：列表查询的结果集必须有上界）。
+          科目列表按契约不分页（05 §5.4 第 8 条，规模天然有上界 = 科目总数），
+          故不引入分页参数；这一条 LIMIT 只是兜底：将来有人误把科目表当作
+          可膨胀的表用，或数据被灌脏，接口也不会一次性吐出全表。
+        -->
+        LIMIT 500
+    </select>
+
+    <!--
+      按主键查，**不过滤 status**：管理端要能拿到已停用的行；详情接口据
+      "查不到"与"已停用"统一判 3001（05 §5.1.2 把两者合成了一个码）。
+    -->
+    <select id="selectById" resultType="com.ruankao.domain.entity.Subject">
+        SELECT
+        <include refid="subjectColumns"/>,
+        <include refid="paperTotalScoreColumn"/>
+        FROM rk_subject s
+        WHERE s.id = #{id}
+    </select>
+
+    <!-- 管理端列表：含 DISABLED（05 §5.10 第 37 条），排序与考生端一致 -->
+    <select id="selectAllForAdmin" resultType="com.ruankao.domain.entity.Subject">
+        SELECT
+        <include refid="subjectColumns"/>,
+        <include refid="paperTotalScoreColumn"/>
+        FROM rk_subject s
+        ORDER BY s.level ASC, s.sort_no ASC, s.id ASC
+        <!-- AC-4：结果集必须有上界 -->
+        LIMIT 500
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO rk_subject
+            (level, code, name, paper_type, exam_period,
+             outline_status, content_status, intro, sort_no, status)
+        VALUES
+            (#{level}, #{code}, #{name}, #{paperType}, #{examPeriod},
+             #{outlineStatus}, #{contentStatus}, #{intro}, #{sortNo}, #{status})
+    </insert>
+
+    <!--
+      可编辑列不含 level（改级别会架空已配好的卷面模板，05 §5.10 第 38 条）,
+      也不含 status（启停走 updateStatus，各自单独记审计）。
+      question_count 是冗余统计列，由题目流程维护，编辑入口不写。
+    -->
+    <update id="update">
+        UPDATE rk_subject
+        SET code           = #{code},
+            name           = #{name},
+            paper_type     = #{paperType},
+            exam_period    = #{examPeriod},
+            outline_status = #{outlineStatus},
+            content_status = #{contentStatus},
+            intro          = #{intro},
+            sort_no        = #{sortNo}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE rk_subject SET status = #{status} WHERE id = #{id}
+    </update>
+
+    <!-- excludeId 为 null 时该条件不生效（插入场景）；否则排除自己（更新场景） -->
+    <select id="countByCode" resultType="int">
+        SELECT COUNT(*)
+        FROM rk_subject s
+        WHERE s.code = #{code}
+        <if test="excludeId != null">
+            AND s.id &lt;&gt; #{excludeId}
+        </if>
+    </select>
+
+    <!-- COALESCE：该级别下一条都没有时返回 0 而不是 NULL（COUNT/MAX 的经典坑） -->
+    <select id="selectMaxSortNo" resultType="int">
+        SELECT COALESCE(MAX(s.sort_no), 0) FROM rk_subject s WHERE s.level = #{level}
+    </select>
+
+</mapper>

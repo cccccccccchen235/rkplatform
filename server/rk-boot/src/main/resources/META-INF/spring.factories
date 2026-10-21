@@ -1,0 +1,5 @@
+# 启动期环境变量校验（约束 AC-1）。
+# 用 EnvironmentPostProcessor 而非 @Component：它在容器刷新之前执行，
+# 变量缺失时数据源都还没被创建，报错信息里不会掺杂二次失败。
+org.springframework.boot.env.EnvironmentPostProcessor=\
+com.ruankao.boot.config.RequiredEnvValidator

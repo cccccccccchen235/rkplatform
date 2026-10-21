@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.ruankao</groupId>
+    <artifactId>ruankao-server</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>rk-boot</artifactId>
+  <name>rk-boot</name>
+  <description>启动模块：唯一的 Spring Boot 主类、配置装配、配置文件。禁止包含任何业务代码。</description>
+
+  <dependencies>
+    <!-- 启动模块只依赖 rk-api。rk-service/rk-repository/rk-domain 经由 rk-api 进入运行时类路径，
+         组件扫描与 Mapper 扫描都按包名字符串工作，无需编译期依赖。 -->
+    <dependency>
+      <groupId>com.ruankao</groupId>
+      <artifactId>rk-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <!-- 06 §6.1：产物固定为 server/rk-boot/target/rk-boot.jar -->
+    <finalName>rk-boot</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>com.ruankao.boot.RkBootApplication</mainClass>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-layering</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <searchTransitive>false</searchTransitive>
+                  <excludes>
+                    <!-- 06 §6.1：rk-boot 禁止包含业务代码，只允许依赖 rk-api -->
+                    <exclude>com.ruankao:rk-domain</exclude>
+                    <exclude>com.ruankao:rk-repository</exclude>
+                    <exclude>com.ruankao:rk-service</exclude>
+                  </excludes>
+                  <message>分层约束（06 §6.1）：rk-boot 只允许依赖 rk-api，且不得包含任何业务代码（Service/实体/Mapper 都不属于这里）。</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

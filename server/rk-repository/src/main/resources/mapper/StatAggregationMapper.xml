@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruankao.repository.mapper.StatAggregationMapper">
+
+    <!--
+      原始流水，不去重。刻意带回 id：去重取"最近一次"时，同一秒内的两次作答要靠
+      (answered_at, id) 才能稳定裁决（06 §6.10.2 的窗口函数也是这个排序）。
+      去重放在 Java 的 StatAggregator，理由见该 mapper 接口注释。
+    -->
+    <select id="selectAnswerRows" resultType="com.ruankao.domain.vo.StatAnswerRow">
+        SELECT
+            r.id          AS record_id,
+            r.question_id AS question_id,
+            r.outline_id  AS outline_id,
+            r.is_correct  AS correct,
+            r.answered_at AS answered_at
+        FROM user_answer_record r
+        WHERE r.user_id = #{userId}
+          AND r.subject_id = #{subjectId}
+          AND r.is_correct IS NOT NULL
+        ORDER BY r.question_id, r.answered_at DESC, r.id DESC
+        LIMIT #{limit}
+    </select>
+
+    <!--
+      已作答题目 → 知识点。DISTINCT 让同一题的同一标签只出现一次；
+      ON r.is_correct IS NOT NULL 与 selectAnswerRows 同一口径，避免主观题把标签带进来。
+    -->
+    <select id="selectQuestionKpLinks" resultType="com.ruankao.domain.vo.StatQuestionKpRow">
+        SELECT DISTINCT
+            r.question_id AS question_id,
+            qk.kp_id      AS kp_id
+        FROM user_answer_record r
+        JOIN rk_question_kp qk ON qk.question_id = r.question_id
+        WHERE r.user_id = #{userId}
+          AND r.subject_id = #{subjectId}
+          AND r.is_correct IS NOT NULL
+        LIMIT #{limit}
+    </select>
+
+    <!-- 分母 n：该科目各叶子章节的已发布题量。COUNT 的聚合结果行数=章节数，天然有界。 -->
+    <select id="selectOutlinePublishedCounts" resultType="com.ruankao.domain.vo.StatRefCountRow">
+        SELECT
+            q.outline_id AS ref_id,
+            COUNT(*)     AS question_count
+        FROM rk_question q
+        WHERE q.subject_id = #{subjectId}
+          AND q.status = 'PUBLISHED'
+        GROUP BY q.outline_id
+    </select>
+
+    <!-- 分母 n：该科目各知识点的已发布题量（一题多标签时每个标签各计一次）。 -->
+    <select id="selectKpPublishedCounts" resultType="com.ruankao.domain.vo.StatRefCountRow">
+        SELECT
+            qk.kp_id AS ref_id,
+            COUNT(*) AS question_count
+        FROM rk_question q
+        JOIN rk_question_kp qk ON qk.question_id = q.id
+        WHERE q.subject_id = #{subjectId}
+          AND q.status = 'PUBLISHED'
+        GROUP BY qk.kp_id
+    </select>
+
+    <!--
+      近 days 天有作答的用户 × 其全部作答科目。
+      子查询先锁定"活跃用户"，外层再展开这些用户做过的全部科目——只回填最近那一门
+      会让早先科目的掌握度因时间衰减长期不更新（06 §6.13）。
+      用 NOW() 而不是应用时钟：日期边界以库为准，避免多实例/时区差在午夜切出两套口径。
+    -->
+    <select id="selectActiveUserSubjects" resultType="com.ruankao.domain.vo.ActiveUserSubjectRow">
+        SELECT DISTINCT
+            r.user_id    AS user_id,
+            r.subject_id AS subject_id
+        FROM user_answer_record r
+        WHERE r.is_correct IS NOT NULL
+          AND r.user_id IN (
+              SELECT DISTINCT a.user_id
+              FROM user_answer_record a
+              WHERE a.is_correct IS NOT NULL
+                AND a.answered_at &gt;= (NOW() - INTERVAL #{days} DAY)
+          )
+        LIMIT #{limit}
+    </select>
+
+</mapper>

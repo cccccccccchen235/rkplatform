@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.ruankao</groupId>
+    <artifactId>ruankao-server</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>rk-repository</artifactId>
+  <name>rk-repository</name>
+  <description>持久层：Mapper 接口与 XML、Redis DAO、缓存 Key 定义。禁止包含业务规则。</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.ruankao</groupId>
+      <artifactId>rk-domain</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.baomidou</groupId>
+      <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+    </dependency>
+
+    <!-- JDBC 驱动。mybatis-plus 的 starter 带进来的是 spring-boot-starter-jdbc（连接池与
+         事务抽象），不含具体驱动，必须显式声明，否则启动即报
+         "Cannot load driver class: com.mysql.cj.jdbc.Driver"。
+         版本由 spring-boot-dependencies 托管（Boot 3.3.13 → 8.3.0），不在此写死。 -->
+    <dependency>
+      <groupId>com.mysql</groupId>
+      <artifactId>mysql-connector-j</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- 会话与缓存存储（03 §3.4：Sa-Token 会话落在 Redis，不用 JWT）。
+         连接是惰性的：本机没有 Redis 时不阻塞启动，只在真正读写会话时报错。 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-redis</artifactId>
+    </dependency>
+
+    <!-- CacheDao 用 JSONUtil 做缓存载荷的序列化（06 §6.11：序列化由 DAO 负责）。
+         虽然经 rk-domain → rk-common 传递也能拿到，但"直接使用的 API 必须直接声明"
+         ——否则某天 rk-common 去掉 hutool，这里的编译会以"找不到符号"的形式
+         在离原因很远的地方炸掉。 -->
+    <dependency>
+      <groupId>cn.hutool</groupId>
+      <artifactId>hutool-all</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- 只引 junit-jupiter，理由同 rk-service：这里要测的是 CacheDao 的降级分支
+         （Redis 抛异常时必须回落 loader，而不是把异常抛给调用方），
+         它不连库、也不该连库——真连上 Redis 反而测不到异常分支。
+         版本由 spring-boot-starter-parent 经 junit-bom 统一管理。 -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-layering</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <searchTransitive>false</searchTransitive>
+                  <excludes>
+                    <!-- 06 §6.1：持久层只向下依赖 rk-domain，禁止反向依赖上层 -->
+                    <exclude>com.ruankao:rk-service</exclude>
+                    <exclude>com.ruankao:rk-api</exclude>
+                    <exclude>com.ruankao:rk-boot</exclude>
+                    <!-- 06 §6.1：rk-repository 禁止依赖 Spring Web -->
+                    <exclude>org.springframework.boot:spring-boot-starter-web</exclude>
+                    <exclude>org.springframework:spring-web</exclude>
+                    <exclude>org.springframework:spring-webmvc</exclude>
+                    <exclude>jakarta.servlet:jakarta.servlet-api</exclude>
+                  </excludes>
+                  <message>分层约束（06 §6.1）：rk-repository 只允许依赖 rk-domain 及框架，禁止反向依赖 rk-service/rk-api，也禁止引入 Web 依赖。业务规则请上移到 rk-service。</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

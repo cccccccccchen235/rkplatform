@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruankao.repository.mapper.UserAnswerRecordMapper">
+
+    <!--
+      列名显式写出，理由见 SubjectMapper.xml：实体在 rk-domain，不能挂 @TableField，
+      显式列名让表结构变更时的映射差异尽早暴露。
+      created_at 交给 DDL 默认值，不由应用写入（时钟以库为准），故不在此列。
+    -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_answer_record
+            (user_id, subject_id, outline_id, question_id, source, session_id,
+             user_answer, is_correct, duration_ms, answered_at)
+        VALUES
+            (#{userId}, #{subjectId}, #{outlineId}, #{questionId}, #{source}, #{sessionId},
+             #{userAnswer}, #{isCorrect}, #{durationMs}, #{answeredAt})
+    </insert>
+
+    <!--
+      纯计数，结果恒为一行，不受 AC-4（列表查询必须有上界）约束。
+      不加 status 过滤：口径就是"某个 (user, subject) 下落了多少条流水"，
+      用来和"本次提交的答案数"逐一对账，多任何一个条件都会让这个对账失真。
+    -->
+    <select id="countByUserAndSubject" resultType="int">
+        SELECT COUNT(*)
+        FROM user_answer_record
+        WHERE user_id = #{userId}
+          AND subject_id = #{subjectId}
+    </select>
+
+    <!-- 防重复窗口回填：窗口内去重题 ID。DISTINCT 让重复做过的同一题只进 Set 一次。 -->
+    <select id="selectRecentQuestionIds" resultType="long">
+        SELECT DISTINCT r.question_id
+        FROM user_answer_record r
+        WHERE r.user_id = #{userId}
+          AND r.subject_id = #{subjectId}
+          AND r.answered_at &gt;= #{since}
+        LIMIT #{limit}
+    </select>
+
+</mapper>

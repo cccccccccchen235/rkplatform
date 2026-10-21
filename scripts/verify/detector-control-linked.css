@@ -1,0 +1,13 @@
+/* detector-control-linked.html 的外链样式，与内联版逐字等价（见那个文件的说明）。 */
+body {
+  background: #ffffff;
+  font-family: system-ui, sans-serif;
+}
+.bad-contrast {
+  color: #bbbbbb;
+  background: #ffffff;
+  font-size: 14px;
+}
+.dead-transition {
+  transition: height 0.3s ease-in-out, padding-top 0.3s ease-in-out;
+}

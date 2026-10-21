@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruankao.repository.mapper.ExamSessionSittingMapper">
+
+    <sql id="sittingColumns">
+        t.id, t.session_id, t.sitting_no, t.sitting_name, t.total_duration_sec, t.remaining_sec,
+        t.status, t.current_section_no, t.objective_score, t.started_at, t.finished_at
+    </sql>
+
+    <insert id="insertBatch">
+        INSERT INTO exam_session_sitting
+            (session_id, sitting_no, sitting_name, total_duration_sec, remaining_sec, status,
+             current_section_no, objective_score, started_at, finished_at)
+        VALUES
+        <foreach collection="rows" item="r" separator=",">
+            (#{r.sessionId}, #{r.sittingNo}, #{r.sittingName}, #{r.totalDurationSec}, #{r.remainingSec},
+             #{r.status}, #{r.currentSectionNo}, #{r.objectiveScore}, #{r.startedAt}, #{r.finishedAt})
+        </foreach>
+    </insert>
+
+    <select id="selectBySession" resultType="com.ruankao.domain.entity.ExamSessionSitting">
+        SELECT <include refid="sittingColumns"/>
+        FROM exam_session_sitting t
+        WHERE t.session_id = #{sessionId}
+        ORDER BY t.sitting_no
+    </select>
+
+    <select id="selectOne" resultType="com.ruankao.domain.entity.ExamSessionSitting">
+        SELECT <include refid="sittingColumns"/>
+        FROM exam_session_sitting t
+        WHERE t.session_id = #{sessionId}
+          AND t.sitting_no = #{sittingNo}
+        LIMIT 1
+    </select>
+
+    <!-- 只有 PENDING → IN_PROGRESS 合法（02 §2.5.5）；影响 0 行即"状态不允许"，由服务层翻 1005。 -->
+    <update id="start">
+        UPDATE exam_session_sitting
+        SET status = 'IN_PROGRESS',
+            started_at = #{startedAt},
+            remaining_sec = #{remainingSec}
+        WHERE id = #{id}
+          AND status = 'PENDING'
+    </update>
+
+    <update id="finish">
+        UPDATE exam_session_sitting
+        SET status = 'FINISHED',
+            remaining_sec = 0,
+            objective_score = #{objectiveScore},
+            finished_at = #{finishedAt}
+        WHERE id = #{id}
+          AND status &lt;&gt; 'FINISHED'
+    </update>
+
+    <update id="updateProgress">
+        UPDATE exam_session_sitting
+        SET remaining_sec = #{remainingSec},
+            current_section_no = #{currentSectionNo},
+            objective_score = #{objectiveScore}
+        WHERE id = #{id}
+    </update>
+
+    <!--
+      超时兜底（06 §6.9.2 第 2 条）：只把"确实超了 total_duration_sec + 60s"的场次捞出来。
+      多 60 秒是容忍与请求线程的竞争——真正的判定永远在请求路径上按 remainingSec 做。
+    -->
+    <select id="selectExpired" resultType="com.ruankao.domain.entity.ExamSessionSitting">
+        SELECT <include refid="sittingColumns"/>
+        FROM exam_session_sitting t
+        JOIN exam_session s ON s.id = t.session_id
+        WHERE t.status = 'IN_PROGRESS'
+          AND s.status = 'IN_PROGRESS'
+          AND t.started_at IS NOT NULL
+          AND t.started_at &lt; DATE_SUB(NOW(), INTERVAL (t.total_duration_sec + 60) SECOND)
+        ORDER BY t.id
+        LIMIT #{limit}
+    </select>
+
+    <!--
+      会话级滞留（评审 G1）：会话仍 IN_PROGRESS、当前场次 PENDING、上一场次结束已超过 N 小时。
+      判据用 prev.finished_at 而不是 updated_at——GET /exams/{id} 是只读不写库的，
+      用活动时间会漏判"考完上午再也不回来"的会话。返回待结算的 PENDING 场次。
+    -->
+    <select id="selectStalePending" resultType="com.ruankao.domain.entity.ExamSessionSitting">
+        SELECT <include refid="sittingColumns"/>
+        FROM exam_session_sitting t
+        JOIN exam_session s ON s.id = t.session_id
+        WHERE s.status = 'IN_PROGRESS'
+          AND t.status = 'PENDING'
+          AND EXISTS (
+              SELECT 1
+              FROM exam_session_sitting prev
+              WHERE prev.session_id = t.session_id
+                AND prev.sitting_no = t.sitting_no - 1
+                AND prev.status = 'FINISHED'
+                AND prev.finished_at IS NOT NULL
+                AND prev.finished_at &lt; DATE_SUB(NOW(), INTERVAL #{hours} HOUR)
+          )
+        ORDER BY t.id
+        LIMIT #{limit}
+    </select>
+
+</mapper>

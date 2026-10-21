@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruankao.repository.mapper.KnowledgePointMapper">
+
+    <sql id="kpColumns">
+        k.id,
+        k.subject_id,
+        k.name,
+        k.aliases,
+        k.question_count,
+        k.status,
+        k.created_at,
+        k.updated_at
+    </sql>
+
+    <select id="selectBySubject" resultType="com.ruankao.domain.entity.KnowledgePoint">
+        SELECT
+        <include refid="kpColumns"/>
+        FROM rk_knowledge_point k
+        <where>
+            k.subject_id = #{subjectId}
+            <if test="!includeDisabled">
+                AND k.status = 'ENABLED'
+            </if>
+        </where>
+        <!-- 题量降序：管理端最关心的是"哪些标签真的有题"，而不是字母序 -->
+        ORDER BY k.question_count DESC, k.id ASC
+        <!-- AC-4：结果集必须有上界 -->
+        LIMIT 1000
+    </select>
+
+    <select id="selectById" resultType="com.ruankao.domain.entity.KnowledgePoint">
+        SELECT
+        <include refid="kpColumns"/>
+        FROM rk_knowledge_point k
+        WHERE k.id = #{id}
+    </select>
+
+    <select id="selectBySubjectAndName" resultType="com.ruankao.domain.entity.KnowledgePoint">
+        SELECT
+        <include refid="kpColumns"/>
+        FROM rk_knowledge_point k
+        WHERE k.subject_id = #{subjectId}
+          AND k.name = #{name}
+        LIMIT 1
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO rk_knowledge_point
+            (subject_id, name, aliases, status)
+        VALUES
+            (#{subjectId}, #{name}, #{aliases}, #{status})
+    </insert>
+
+    <update id="update">
+        UPDATE rk_knowledge_point
+        SET name    = #{name},
+            aliases = #{aliases}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM rk_knowledge_point WHERE id = #{id}
+    </delete>
+
+    <select id="countQuestionRefs" resultType="int">
+        SELECT COUNT(*) FROM rk_question_kp WHERE kp_id = #{kpId}
+    </select>
+
+    <!--
+      合并迁移：先把 source 的关联并到 target（IGNORE 掉 target 已有的重复行），
+      再由 Service 删 source 的残留关联。
+      用 INSERT IGNORE ... SELECT 而不是 UPDATE：一道题同时打两个标签时，
+      UPDATE 会撞 uk_question_kp 唯一键导致整个合并失败。
+      SELECT 这里不带 WHERE kp_id = source 之外的过滤——迁移的就是全部关联。
+    -->
+    <insert id="migrateQuestionRefs">
+        INSERT IGNORE INTO rk_question_kp (question_id, kp_id)
+        SELECT qk.question_id, #{targetId}
+        FROM rk_question_kp qk
+        WHERE qk.kp_id = #{sourceId}
+    </insert>
+
+    <!--
+      清掉某标签的全部题目关联。合并流程的最后一步：迁移完成后源标签的关联行
+      成了指向已删除标签的孤儿（DDL 里没有外键约束，不会有任何东西替我们拦下来）。
+    -->
+    <delete id="deleteQuestionRefsByKp">
+        DELETE FROM rk_question_kp WHERE kp_id = #{kpId}
+    </delete>
+
+    <!--
+      冗余列重算：口径是"该标签下的已发布题量"（04 §4.5），
+      必须 JOIN rk_question 过滤 status = 'PUBLISHED'，否则草稿题也被算进考生端可见的题量。
+    -->
+    <update id="refreshQuestionCount">
+        UPDATE rk_knowledge_point k
+        SET k.question_count = (
+            SELECT COUNT(*)
+            FROM rk_question_kp qk
+            JOIN rk_question q ON q.id = qk.question_id
+            WHERE qk.kp_id = k.id
+              AND q.status = 'PUBLISHED'
+        )
+        WHERE k.id = #{kpId}
+    </update>
+
+</mapper>

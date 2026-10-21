@@ -1,0 +1,58 @@
+# ===============================================================
+# 本文件必须在第一次 git add 之前就位（约束 AC-1 / 见 09 §9.4.2）
+# 一旦 deploy/.env 进过历史，改密钥就必须改写历史才能清干净。
+#
+# 09 §9.4.2 的"必须包含"清单共 7 项，逐项对应关系：
+#   deploy/.env · deploy/.env.* · !deploy/.env.example  → 本文件「凭据」组
+#   deploy/data/ · backup/ · *.hprof                    → 本文件「备份与转储」组
+#   *.log                                              → 本文件「日志与临时文件」组
+# ===============================================================
+
+# ---- 凭据：绝不进仓 ----
+deploy/.env
+deploy/.env.*
+!deploy/.env.example
+*.pem
+*.key
+
+# ---- 备份与转储：可能含明文口令或会话令牌（09 §9.4.2）----
+# backup/ 与 deploy/data/ 装数据库转储与上传文件；*.hprof 是堆转储，
+# 里面可能有运行期内存中的明文口令。三者都属"泄漏一次即永久可查"。
+deploy/data/
+backup/
+*.hprof
+
+# ---- 题库语料：GR-1 硬约束，scripts/generate/ 下不得出现数据文件 ----
+# 与 CI 的 check-no-corpus-files 同一口径（08 §8.4.4 / §8.10）
+scripts/generate/**/*.pdf
+scripts/generate/**/*.docx
+scripts/generate/**/*.doc
+scripts/generate/**/*.txt
+scripts/generate/**/*.csv
+
+# ---- 构建产物 ----
+target/
+node_modules/
+dist/
+*.jar
+*.war
+*.class
+
+# ---- 本地工具与 IDE ----
+.claude/settings.local.json
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# ---- 日志与临时文件 ----
+*.log
+logs/
+*.tmp
+*.bak
+
+# ---- 操作系统 ----
+Thumbs.db
+Desktop.ini
+.DS_Store

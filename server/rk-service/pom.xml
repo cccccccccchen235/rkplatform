@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.ruankao</groupId>
+    <artifactId>ruankao-server</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>rk-service</artifactId>
+  <name>rk-service</name>
+  <description>业务层：事务边界、业务规则、领域编排。禁止感知 HTTP。</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.ruankao</groupId>
+      <artifactId>rk-repository</artifactId>
+    </dependency>
+
+    <!-- 直接声明而非依赖传递：这两个包在本层被直接使用（@Service / @Transactional）。 -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-tx</artifactId>
+    </dependency>
+
+    <!-- 密码哈希不在这里声明依赖：实现放在 rk-common 的 PasswordHasher，
+         登录与一次性命令行哈希生成器必须共用同一份实现（见 06 §6.1 第 2 条）。 -->
+
+    <dependency>
+      <groupId>cn.hutool</groupId>
+      <artifactId>hutool-all</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- 只引 junit-jupiter，不引 spring-boot-starter-test：本层要测的是
+         纯逻辑（层级推导、树组装），这些类的价值正在于"不依赖容器"。
+         引 starter-test 会让人以为该写 @SpringBootTest——那类测试把
+         "层级推导对不对"与"数据库连不连得上"绑在一起，失败时先要分辨是哪一类问题。
+         版本由 spring-boot-starter-parent 经 junit-bom 统一管理。 -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-layering</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <searchTransitive>false</searchTransitive>
+                  <excludes>
+                    <exclude>com.ruankao:rk-api</exclude>
+                    <exclude>com.ruankao:rk-boot</exclude>
+                    <!-- 06 §6.1：rk-service 禁止依赖 Spring Web / Servlet，业务层不得感知 HTTP -->
+                    <exclude>org.springframework.boot:spring-boot-starter-web</exclude>
+                    <exclude>org.springframework:spring-web</exclude>
+                    <exclude>org.springframework:spring-webmvc</exclude>
+                    <exclude>jakarta.servlet:jakarta.servlet-api</exclude>
+                  </excludes>
+                  <message>分层约束（06 §6.1）：rk-service 只能依赖 rk-repository 及领域/框架，禁止依赖 rk-api/rk-boot，也禁止引入任何 Web/Servlet 依赖。如果这里需要用 HttpServletRequest，说明该逻辑属于 rk-api。</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

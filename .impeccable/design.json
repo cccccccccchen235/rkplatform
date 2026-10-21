@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-02T00:00:00Z",
+  "title": "Design System: 软考在线学习平台",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Single Working Blue",
+        "canonical": "#2a72c2",
+        "note": "白底 4.90:1 / 页面底 4.57:1。全站唯一蓝，兼作文字色与图形色。",
+        "tonalRamp": ["#194474", "#225b9b", "#2a72c2", "#6a9cd4", "#95b9e1", "#bfd5ed", "#d4e3f3", "#eaf1f9"]
+      },
+      "primary-dark": {
+        "role": "primary",
+        "displayName": "Pressed Blue Deep",
+        "canonical": "#225b9b",
+        "note": "= --el-color-primary-dark-2（黑 20% 混主色）。主按钮 hover 与 active 同色，白字 6.91:1。"
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "#6b6e76",
+        "note": "占位与弱提示。文档原值 #909399（2.87:1）过不了 4.5:1，被换掉（docs/18 F11）。",
+        "tonalRamp": ["#3d4046", "#4e5158", "#5f6268", "#6b6e76", "#8a8d93", "#a7a9ae", "#c4c5c9", "#e1e2e4"]
+      },
+      "surface-page": {
+        "role": "neutral",
+        "displayName": "Page Surface",
+        "canonical": "#f5f7fa",
+        "note": "页面底 / 未印书脊脊身 / 滚动条轨道。",
+        "tonalRamp": ["#dfe3ea", "#e7eaf0", "#eef1f5", "#f5f7fa", "#f7f9fb", "#fafbfd", "#fcfdfe", "#ffffff"]
+      }
+    },
+    "typographyMeta": {
+      "title": { "displayName": "Title", "purpose": "页面 h1 与首页标题；整站最大实际字号。" },
+      "subtitle": { "displayName": "Subtitle", "purpose": "卡片科目名、抽屉名、分组标题、品牌字标。" },
+      "body": { "displayName": "Body", "purpose": "全站默认 14px；也是 --el-font-size-base 与按钮字号。" },
+      "label": { "displayName": "Label", "purpose": "12px 元数据小字；数字一律 tabular-nums。" }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "spine-lift", "value": "transform 220ms cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "首页唯一动效：书脊被取下时离开层板，指数缓出。" },
+      { "name": "spine-border", "value": "border-color 160ms ease-out", "purpose": "书脊 hover 描边变化。" },
+      { "name": "reduced-motion", "value": "transition: none; scrollIntoView behavior: auto", "purpose": "prefers-reduced-motion: reduce 时减少动态但保留结果。" },
+      { "name": "button-transition", "value": "all .1s", "purpose": "Element Plus 按钮默认过渡，保留。" }
+    ],
+    "breakpoints": [
+      { "name": "desktop-min", "value": "1280px", "note": "桌面优先：低于此宽度保留横向滚动，不重排（body min-width + viewport width=1280）。" },
+      { "name": "content-max", "value": "1200px", "note": ".rk-container 最大宽度，水平居中，左右 24px 内边距。" }
+    ],
+    "layout": {
+      "spacingScale": ["4px", "8px", "12px", "16px", "24px"],
+      "radiusScale": ["2px", "4px", "8px"],
+      "shelf": {
+        "spineWidth": "88px",
+        "spineGap": "8px",
+        "spineMaxHeight": "200px",
+        "spineBand": "6px",
+        "heightFormula": "height = 200px × (paperTotalScore / 225)",
+        "board": "1px solid #6b6e76（层板），每段书脊靠底对齐",
+        "tiers": "高级 5 / 中级 11 / 初级 4，按级别分三段"
+      },
+      "subjectGrid": "repeat(3, minmax(0, 1fr)); gap 16px"
+    },
+    "chrome": [
+      { "name": "selection", "value": "::selection { background: rgba(#2a72c2, .25); color: #303133 }", "purpose": "选中保持原字色对比度，不换主色实底 + 白字。" },
+      { "name": "caret", "value": "caret-color: #2a72c2", "purpose": "输入光标用全站唯一蓝。" },
+      { "name": "scrollbar", "value": "12px，滑块 6px 圆角 + 3px #f5f7fa 分隔，轨道 #f5f7fa，滑块 #dcdfe6，hover #6b6e76", "purpose": "1280 基准宽下横向滚动条常驻，按界面的一部分设计。" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "主操作：注册、登录、进入科目页。",
+      "html": "<button class=\"ds-btn-primary\">注册</button>",
+      "css": ".ds-btn-primary { background-color: var(--el-color-primary, #2a72c2); color: #ffffff; height: 32px; padding: 8px 15px; font-size: 14px; line-height: 1; border: none; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; cursor: pointer; transition: all .1s; } .ds-btn-primary:hover { background-color: var(--el-color-primary-dark-2, #225b9b); } .ds-btn-primary:active { background-color: var(--el-color-primary-dark-2, #225b9b); } .ds-btn-primary:focus-visible { outline: 2px solid var(--el-color-primary, #2a72c2); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Button",
+      "kind": "button",
+      "refersTo": "button-text",
+      "description": "次级动作：退出、重试、切换。无填充。",
+      "html": "<button class=\"ds-btn-text\">退出</button>",
+      "css": ".ds-btn-text { background: transparent; color: var(--el-text-color-regular, #606266); height: 32px; padding: 8px 15px; font-size: 14px; line-height: 1; border: none; border-radius: 4px; cursor: pointer; transition: color .1s; } .ds-btn-text:hover { color: var(--el-color-primary, #2a72c2); } .ds-btn-text:focus-visible { outline: 2px solid var(--el-color-primary, #2a72c2); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "表单输入。占位与焦点都由运行期变量驱动。",
+      "html": "<input class=\"ds-input\" placeholder=\"4~32 位字母、数字或下划线\" />",
+      "css": ".ds-input { height: 32px; padding: 0 11px; font-size: 14px; color: var(--el-text-color-primary, #303133); background: #ffffff; border: 1px solid var(--el-border-color-base, #dcdfe6); border-radius: var(--el-border-radius-base, 4px); caret-color: var(--el-color-primary, #2a72c2); outline: none; } .ds-input::placeholder { color: var(--el-text-color-placeholder, #6b6e76); } .ds-input:focus { border-color: var(--el-color-primary, #2a72c2); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "内容容器：科目卡、抽屉、认证卡。零投影。",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card__title\">信息系统项目管理师</h3><p class=\"ds-card__text\">按开考时间、大纲完整度与题库规模显示这门课的真实状态。</p></div>",
+      "css": ".ds-card { background: #ffffff; border: 1px solid var(--el-border-color-base, #dcdfe6); border-radius: 8px; padding: 16px; } .ds-card__title { margin: 0 0 12px; font-size: 16px; font-weight: 600; color: var(--el-text-color-primary, #303133); } .ds-card__text { margin: 0; font-size: 14px; line-height: 1.6; color: var(--el-text-color-regular, #606266); }"
+    },
+    {
+      "name": "Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "顶栏导航。当前项用主色文字 + 2px 下划线，不单靠颜色。",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav__item ds-nav__item--active\" href=\"#\">首页</a><a class=\"ds-nav__item\" href=\"#\">科目</a></nav>",
+      "css": ".ds-nav { display: flex; gap: 24px; } .ds-nav__item { color: var(--el-text-color-regular, #606266); font-size: 14px; text-decoration: none; padding: 4px 0; border-bottom: 2px solid transparent; } .ds-nav__item:hover { color: var(--el-color-primary, #2a72c2); } .ds-nav__item:focus-visible { outline: 2px solid var(--el-color-primary, #2a72c2); outline-offset: 2px; } .ds-nav__item--active { color: var(--el-color-primary, #2a72c2); border-bottom-color: var(--el-color-primary, #2a72c2); }"
+    },
+    {
+      "name": "Shelf Spine",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "签名组件：脊高 = 卷面满分。顶端色带编码考期；实线=大纲完整、虚线=骨架。",
+      "html": "<button class=\"ds-spine ds-spine--printed\" style=\"--spine-ratio: 1\"><span class=\"ds-spine__band\"></span><span class=\"ds-spine__name\">软件设计师</span><span class=\"ds-spine__foot\"><span>DE</span><span>225</span></span></button>",
+      "css": ".ds-spine { --spine-max: 200px; width: 88px; height: calc(var(--spine-max) * var(--spine-ratio, 1)); min-height: 66px; display: flex; flex-direction: column; align-items: stretch; padding: 0; border: 1px dashed var(--el-border-color-base, #dcdfe6); border-radius: 2px 2px 0 0; background: var(--el-bg-color-page, #f5f7fa); cursor: pointer; overflow: hidden; position: relative; transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), border-color 160ms ease-out; } .ds-spine:hover { transform: translateY(-4px); border-color: #6b6e76; } .ds-spine:focus-visible { outline: 2px solid var(--el-color-primary, #2a72c2); outline-offset: 2px; } .ds-spine--printed { background: #ffffff; border: 1px solid var(--el-color-primary, #2a72c2); } .ds-spine__band { flex: 0 0 6px; background: var(--el-color-primary, #2a72c2); } .ds-spine__name { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2px; font-size: 14px; font-weight: 600; color: var(--el-text-color-primary, #303133); writing-mode: vertical-rl; letter-spacing: .06em; line-height: 1.15; } .ds-spine__foot { flex: 0 0 auto; display: flex; gap: 3px; justify-content: center; padding-bottom: 4px; font-size: 12px; line-height: 1; color: var(--el-color-primary, #2a72c2); font-variant-numeric: tabular-nums; } @media (prefers-reduced-motion: reduce) { .ds-spine { transition: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Honest Bookshelf（一面诚实的书架）",
+    "overview": "这是一套没有装饰层的系统。它的世界不是被设计出来的，而是从 Element Plus 的变量体系里长出来的：一个蓝、一套 2/4/8 的圆角、一条 1px 的层板线，剩下的靠版式本身说话。页面不靠渐变、投影或纹样制造\"质感\"，因为这里要回答的问题只有\"这个站有什么、哪门课现在真的能练\"——任何为了好看而加的东西都会稀释这个答案。\n\n系统的性格集中在首页：20 个科目被立成 20 根书脊，脊高就是这门课的卷面满分。这不是比喻式的装饰，是一条数据驱动的版式规则——225 / 150 / 75 分对应 200 / 133 / 67 px，高度严格线性；初级层里唯一那本 75 分的书矮一截，是事实漏出来的形式，不是留白。三件事实同时被编码：高度（满分）、实线/虚线（大纲是否完整）、顶端色带的形状（考期）。\n\n配色上，系统拒绝了两条看起来更省事的路。第一条是沿用文档钉死的 Element Plus 默认蓝 #409eff——它白底只有 2.78:1，连图形线都过不了；第二条是\"填充一个蓝、文字另一个蓝\"的双蓝方案——它会让同一屏并排出现两个蓝，却没换到任何一处达标。所以只留一个蓝 #2a72c2。深度上同样克制：全站没有一处 box-shadow，实体感只来自层板那条 1px 实线。",
+    "keyCharacteristics": [
+      "单一主色，无第二强调色；主色承担填充、文字、链接、焦点环与色带。",
+      "桌面优先：body 最小宽度 1280px，低于该宽度保留横向滚动而不重排。",
+      "平面的、基于线与边框的层次；零投影、零拟物。",
+      "5 级间距（4/8/12/16/24）、3 级圆角（2/4/8）、单一平台无衬线字体栈。",
+      "信息编码优先用形状与文字，颜色只作第三重保险。"
+    ],
+    "rules": [
+      { "name": "The One Blue Rule", "body": "全站只有一个蓝。填充、文字、链接、焦点环、色带都用 #2a72c2；不引入第二个强调色，也不把主色拆成\"填充档 / 文字档\"——那会让同屏出现两个蓝，且并不解决任何达标问题。", "section": "colors" },
+      { "name": "The Contrast Floor Rule", "body": "每个颜色先量它实际落点的对比度再上屏：文字在它自己的底色上 ≥4.5:1，线条与图形 ≥3:1。文档钉死的 #409eff（2.78:1）与 #909399（2.87:1）因此被替换（记录于 docs/18 的 F11 / F14），而不是被沿用。改色时留出余量，不接受\"刚好过线\"的值。", "section": "colors" },
+      { "name": "The Tabular Rule", "body": "所有计数、满分与编号都必须 font-variant-numeric: tabular-nums 并共用一条基线；数字要能在不同书脊、不同行之间直接被比较。不要为长名字单独缩字号——那会让同一层书架上的字号参差不齐，长名字改由竖排自动折行。", "section": "typography" },
+      { "name": "The Height-Is-A-Fact Rule", "body": "书脊高度是从 paperTotalScore 线性换算出来的（--spine-ratio，225 分 = 200px），不由排版权重、内容长度或人工排版决定。数据变，高度跟着变；初级层里那道缺口是真实事实。", "section": "layout" },
+      { "name": "The Board-Not-Shadow Rule", "body": "深度只来自一条 1px 实线。需要表达\"抬起来/分层/选中\"时，用离开基线、位移或边框变化，不用投影；任何新增的表面都默认平贴在页面底上。", "section": "elevation" },
+      { "name": "The Shape-Carries-The-Encoding Rule", "body": "小尺寸上必须被读出来的类别，用形状编码，不用色相深浅。同一种颜色 + 整条/左半/右半，比三个相近的色相可靠。", "section": "colors" },
+      { "name": "The No-Dimming Rule", "body": "不用降低透明度表达\"未印 / 次要 / 禁用\"。opacity 会把一个维度的信息压到另一个通道上——曾用 opacity: .45 表达未印，结果那 17 本连考期都读不出来（1.20~1.52:1），已删除。次要信息用达标的灰 #6b6e76 与虚线框表达，保住对比度。", "section": "elevation" }
+    ],
+    "dos": [
+      "Do 把每一个可见数值先对它实际落点量对比度：文字 ≥4.5:1、线/图形 ≥3:1（The Contrast Floor Rule）。",
+      "Do 只用 #2a72c2 一个蓝；hover / active 用 #225b9b（The One Blue Rule）。",
+      "Do 用 --spine-ratio 把 paperTotalScore 线性换算成高度（The Height-Is-A-Fact Rule）。",
+      "Do 用小尺寸可读的形状编码类别，而不是相近色相（The Shape-Carries-The-Encoding Rule）。",
+      "Do 用 4/8/12/16/24 的间距刻度与 2/4/8 的圆角刻度，不新增自由值。",
+      "Do 保持 body 最小宽度 1280px，<meta viewport width=1280>；窄屏出横向滚动，不重排。",
+      "Do 计数、满分、编号加 tabular-nums 并基线对齐（The Tabular Rule）。",
+      "Do 用 el-button / el-card 暴露的变量与 class / slot 定制外观。"
+    ],
+    "donts": [
+      "Don't 引入第二个强调色，或把主色拆成\"填充档 / 文字档\"（One Blue Rule）。",
+      "Don't 用 opacity 或降对比表达\"未印 / 次要 / 禁用\"（The No-Dimming Rule）；用达标灰 + 虚线框。",
+      "Don't 加 box-shadow、投影或 backdrop-filter 造层次；深度来自 1px 实线（The Board-Not-Shadow Rule）。",
+      "Don't 给小尺寸类别只换色相而不换形状。",
+      "Don't 写 .el-xxx__body 这类内部结构选择器——升级时会以\"样式莫名失效\"断裂。",
+      "Don't 把主按钮的 hover 留给 Element Plus 默认的 light-3（白字 2.87:1）；它指向 dark-2。",
+      "Don't 把行高压到 1.4 以下，或为长名字单独缩字号。",
+      "Don't 把柔和的过渡渐变当装饰；linear-gradient 在这里只用来画硬边形状（50% 实 / 50% 透明）。"
+    ]
+  }
+}

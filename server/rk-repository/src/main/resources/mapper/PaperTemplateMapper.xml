@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruankao.repository.mapper.PaperTemplateMapper">
+
+    <!-- status = 'ENABLED' 的条件与 SubjectMapper.paperTotalScoreColumn 逐字一致 -->
+    <select id="selectEnabledBySubjectId" resultType="com.ruankao.domain.entity.PaperTemplate">
+        SELECT
+            t.id,
+            t.subject_id,
+            t.name,
+            t.paper_type,
+            t.total_max_score,
+            t.auto_scored_max_score,
+            t.remark,
+            t.status,
+            t.created_at,
+            t.updated_at
+        FROM exam_paper_template t
+        WHERE t.subject_id = #{subjectId}
+          AND t.status = 'ENABLED'
+        LIMIT 1
+    </select>
+
+    <!--
+      管理端读取：**不过滤 status**（理由见接口 javadoc）。
+      uk_subject(subject_id) 保证至多一行。
+    -->
+    <select id="selectBySubjectId" resultType="com.ruankao.domain.entity.PaperTemplate">
+        SELECT
+            t.id,
+            t.subject_id,
+            t.name,
+            t.paper_type,
+            t.total_max_score,
+            t.auto_scored_max_score,
+            t.remark,
+            t.status,
+            t.created_at,
+            t.updated_at
+        FROM exam_paper_template t
+        WHERE t.subject_id = #{subjectId}
+        LIMIT 1
+    </select>
+
+    <select id="selectSittings" resultType="com.ruankao.domain.entity.PaperSitting">
+        SELECT
+            s.id,
+            s.template_id,
+            s.sitting_no,
+            s.sitting_name,
+            s.total_duration,
+            s.total_max_score,
+            s.auto_scored_max_score,
+            s.sort_no
+        FROM exam_paper_sitting s
+        WHERE s.template_id = #{templateId}
+        ORDER BY s.sitting_no ASC
+        LIMIT 20
+    </select>
+
+    <!-- section_no 全局连续，故按它排序即得到跨场次的正确顺序 -->
+    <select id="selectSections" resultType="com.ruankao.domain.entity.PaperSection">
+        SELECT
+            c.id,
+            c.template_id,
+            c.sitting_no,
+            c.section_no,
+            c.section_name,
+            c.section_type,
+            c.question_type,
+            c.question_count,
+            c.per_question_score,
+            c.duration_min,
+            c.duration_max,
+            c.allow_early_submit,
+            c.support_status,
+            c.sort_no
+        FROM exam_paper_section c
+        WHERE c.template_id = #{templateId}
+        ORDER BY c.section_no ASC
+        LIMIT 50
+    </select>
+
+    <insert id="insertTemplate" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO exam_paper_template
+            (subject_id, name, paper_type, total_max_score, auto_scored_max_score, status)
+        VALUES
+            (#{subjectId}, #{name}, #{paperType}, #{totalMaxScore}, #{autoScoredMaxScore}, #{status})
+    </insert>
+
+    <update id="updateTemplate">
+        UPDATE exam_paper_template
+        SET name                  = #{name},
+            paper_type            = #{paperType},
+            total_max_score       = #{totalMaxScore},
+            auto_scored_max_score = #{autoScoredMaxScore},
+            status                = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteSections">
+        DELETE FROM exam_paper_section WHERE template_id = #{templateId}
+    </delete>
+
+    <delete id="deleteSittings">
+        DELETE FROM exam_paper_sitting WHERE template_id = #{templateId}
+    </delete>
+
+    <insert id="insertSitting" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO exam_paper_sitting
+            (template_id, sitting_no, sitting_name, total_duration,
+             total_max_score, auto_scored_max_score, sort_no)
+        VALUES
+            (#{templateId}, #{sittingNo}, #{sittingName}, #{totalDuration},
+             #{totalMaxScore}, #{autoScoredMaxScore}, #{sortNo})
+    </insert>
+
+    <insert id="insertSection" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO exam_paper_section
+            (template_id, sitting_no, section_no, section_name, section_type, question_type,
+             question_count, per_question_score, duration_min, duration_max,
+             allow_early_submit, support_status, sort_no)
+        VALUES
+            (#{templateId}, #{sittingNo}, #{sectionNo}, #{sectionName}, #{sectionType}, #{questionType},
+             #{questionCount}, #{perQuestionScore}, #{durationMin}, #{durationMax},
+             #{allowEarlySubmit}, #{supportStatus}, #{sortNo})
+    </insert>
+
+</mapper>

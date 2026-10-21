@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.ruankao</groupId>
+    <artifactId>ruankao-server</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>rk-api</artifactId>
+  <name>rk-api</name>
+  <description>接口层：Controller、请求/响应 DTO、参数校验、全局异常、鉴权拦截、在线接口文档。</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.ruankao</groupId>
+      <artifactId>rk-service</artifactId>
+    </dependency>
+    <!-- 显式声明而非依赖传递：rk-api 的 CLI（PasswordGenCli）直接用 rk-common 的 PasswordHasher。
+         rk-common 是依赖链末端（无业务代码、不可能形成环），任何模块直接依赖它都不会破坏分层。 -->
+    <dependency>
+      <groupId>com.ruankao</groupId>
+      <artifactId>rk-common</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <!-- 参数校验实现（Hibernate Validator）。GlobalExceptionHandler 需要处理
+         MethodArgumentNotValidException / ConstraintViolationException 两类异常。 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>cn.dev33</groupId>
+      <artifactId>sa-token-spring-boot3-starter</artifactId>
+    </dependency>
+    <!-- 会话落 Redis（03 §3.4：不使用 JWT，用不透明 UUID token + 服务端会话） -->
+    <dependency>
+      <groupId>cn.dev33</groupId>
+      <artifactId>sa-token-redis-jackson</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.github.xiaoymin</groupId>
+      <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-layering</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <searchTransitive>false</searchTransitive>
+                  <excludes>
+                    <exclude>com.ruankao:rk-repository</exclude>
+                    <exclude>com.ruankao:rk-boot</exclude>
+                    <!-- 超出文档表格的加固：接口层不得直接碰 SQL/Map 层 -->
+                    <exclude>org.mybatis:mybatis</exclude>
+                    <exclude>com.baomidou:mybatis-plus-spring-boot3-starter</exclude>
+                    <exclude>com.baomidou:mybatis-plus-core</exclude>
+                  </excludes>
+                  <message>分层约束（06 §6.1）：rk-api 只允许依赖 rk-service，禁止直接依赖 rk-repository（Mapper 属于持久层）。Controller 只做参数校验、调用 Service、组装响应，不得出现 SQL 或 Mapper。</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruankao.repository.mapper.ExamSessionMapper">
+
+    <sql id="sessionColumns">
+        s.id, s.session_no, s.user_id, s.subject_id, s.template_id, s.status,
+        s.total_duration_sec, s.remaining_sec, s.current_sitting_no, s.current_section_no,
+        s.question_count, s.objective_score, s.auto_scored_max_score, s.total_max_score,
+        s.started_at, s.submitted_at, s.scored_at, s.created_at, s.updated_at
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO exam_session
+            (session_no, user_id, subject_id, template_id, status,
+             total_duration_sec, remaining_sec, current_sitting_no, current_section_no,
+             question_count, objective_score, auto_scored_max_score, total_max_score, started_at)
+        VALUES
+            (#{sessionNo}, #{userId}, #{subjectId}, #{templateId}, #{status},
+             #{totalDurationSec}, #{remainingSec}, #{currentSittingNo}, #{currentSectionNo},
+             #{questionCount}, #{objectiveScore}, #{autoScoredMaxScore}, #{totalMaxScore}, #{startedAt})
+    </insert>
+
+    <!-- 按主键 + user_id：AC-3 要求用户数据访问必须带 user_id，不给"猜 ID"留门。 -->
+    <select id="selectByIdAndUser" resultType="com.ruankao.domain.entity.ExamSession">
+        SELECT <include refid="sessionColumns"/>
+        FROM exam_session s
+        WHERE s.id = #{id}
+          AND s.user_id = #{userId}
+        LIMIT 1
+    </select>
+
+    <!-- 4003 判据：CREATED / IN_PROGRESS 都算"未结束"。LIMIT 1，存在即拦。 -->
+    <select id="selectActiveByUser" resultType="com.ruankao.domain.entity.ExamSession">
+        SELECT <include refid="sessionColumns"/>
+        FROM exam_session s
+        WHERE s.user_id = #{userId}
+          AND s.status IN ('CREATED', 'IN_PROGRESS')
+        ORDER BY s.id DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectById" resultType="com.ruankao.domain.entity.ExamSession">
+        SELECT <include refid="sessionColumns"/>
+        FROM exam_session s
+        WHERE s.id = #{id}
+        LIMIT 1
+    </select>
+
+    <update id="updateProgress">
+        UPDATE exam_session
+        SET status = #{status},
+            current_sitting_no = #{currentSittingNo},
+            current_section_no = #{currentSectionNo},
+            remaining_sec = #{remainingSec},
+            started_at = COALESCE(started_at, #{startedAt})
+        WHERE id = #{id}
+    </update>
+
+    <update id="markSubmitted">
+        UPDATE exam_session
+        SET status = 'SUBMITTED',
+            submitted_at = #{submittedAt}
+        WHERE id = #{id}
+          AND status IN ('CREATED', 'IN_PROGRESS')
+    </update>
+
+    <update id="markScored">
+        UPDATE exam_session
+        SET status = 'SCORED',
+            objective_score = #{objectiveScore},
+            scored_at = #{scoredAt}
+        WHERE id = #{id}
+    </update>
+
+    <update id="markAbandoned">
+        UPDATE exam_session
+        SET status = 'ABANDONED'
+        WHERE id = #{id}
+          AND status IN ('CREATED', 'IN_PROGRESS')
+    </update>
+
+    <!--
+      历史列表（05 §5.6 第 17 条）：默认只给 SUBMITTED/SCORED，显式 includeAbandoned=true 才带
+      ABANDONED。IN_PROGRESS 在任何取值下都不返回——滞留会话由 06 §6.13 的兜底任务自动交卷后再出现
+      （对应评审 B9/G1）。这条规则写成 SQL 而不是在 Java 里过滤：分页的 total 必须与过滤后的
+      集合一致，否则页数会多出一页空白。
+    -->
+    <select id="selectHistory" resultType="com.ruankao.domain.entity.ExamSession">
+        SELECT <include refid="sessionColumns"/>
+        FROM exam_session s
+        WHERE s.user_id = #{userId}
+        <if test="subjectId != null">
+            AND s.subject_id = #{subjectId}
+        </if>
+        <choose>
+            <when test="includeAbandoned">
+                AND s.status IN ('SUBMITTED', 'SCORED', 'ABANDONED')
+            </when>
+            <otherwise>
+                AND s.status IN ('SUBMITTED', 'SCORED')
+            </otherwise>
+        </choose>
+        ORDER BY s.created_at DESC, s.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countHistory" resultType="long">
+        SELECT COUNT(*)
+        FROM exam_session s
+        WHERE s.user_id = #{userId}
+        <if test="subjectId != null">
+            AND s.subject_id = #{subjectId}
+        </if>
+        <choose>
+            <when test="includeAbandoned">
+                AND s.status IN ('SUBMITTED', 'SCORED', 'ABANDONED')
+            </when>
+            <otherwise>
+                AND s.status IN ('SUBMITTED', 'SCORED')
+            </otherwise>
+        </choose>
+    </select>
+
+</mapper>

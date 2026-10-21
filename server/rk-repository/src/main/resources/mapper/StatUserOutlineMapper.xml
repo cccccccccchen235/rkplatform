@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruankao.repository.mapper.StatUserOutlineMapper">
+
+    <!--
+      按 uk_user_outline(user_id, outline_id) 整体覆盖。这是"重算结果"的写入，
+      不是增量累加——每次重算都由流水重新导出全部数字，所以 VALUES(...) 直接覆盖是对的。
+      subject_id 不在 UPDATE 列里：章节不跨科目，唯一键也只认 outline_id。
+    -->
+    <insert id="upsertBatch">
+        INSERT INTO stat_user_outline
+            (user_id, subject_id, outline_id, answered_count, correct_count,
+             accuracy, mastery, last_answered_at)
+        VALUES
+        <foreach collection="rows" item="r" separator=",">
+            (#{r.userId}, #{r.subjectId}, #{r.outlineId}, #{r.answeredCount}, #{r.correctCount},
+             #{r.accuracy}, #{r.mastery}, #{r.lastAnsweredAt})
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            answered_count   = VALUES(answered_count),
+            correct_count    = VALUES(correct_count),
+            accuracy         = VALUES(accuracy),
+            mastery          = VALUES(mastery),
+            last_answered_at = VALUES(last_answered_at)
+    </insert>
+
+</mapper>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruankao.repository.mapper.ExamQuestionMapper">
+
+    <!--
+      候选集：已发布 + 指定题型。last_answered_at 用 GROUP BY 聚合出来，
+      供 L2 降级按"最早做过"排序复用旧题。
+      LIMIT 是 AC-4 的硬上界：单科目单题型远小于 5000（当前 250）。
+    -->
+    <select id="selectCandidates" resultType="com.ruankao.domain.vo.ExamQuestionCandidate">
+        SELECT
+            q.id            AS question_id,
+            q.outline_id    AS outline_id,
+            q.difficulty    AS difficulty,
+            MAX(r.answered_at) AS last_answered_at
+        FROM rk_question q
+        LEFT JOIN user_answer_record r
+               ON r.question_id = q.id
+              AND r.user_id = #{userId}
+              AND r.subject_id = #{subjectId}
+        WHERE q.subject_id = #{subjectId}
+          AND q.question_type = #{questionType}
+          AND q.status = 'PUBLISHED'
+        GROUP BY q.id, q.outline_id, q.difficulty
+        LIMIT #{limit}
+    </select>
+
+    <select id="countPublished" resultType="int">
+        SELECT COUNT(*)
+        FROM rk_question q
+        WHERE q.subject_id = #{subjectId}
+          AND q.question_type = #{questionType}
+          AND q.status = 'PUBLISHED'
+    </select>
+
+</mapper>

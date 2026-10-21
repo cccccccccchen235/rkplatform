@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruankao.repository.mapper.SysConfigMapper">
+
+    <!--
+      按唯一键 uk_config_key 精确取一行的值。直接 SELECT config_value 而不是整行实体：
+      调用方要的就是一个字符串（如 "2"、"true"、"600000"），取出整行再取字段没有收益。
+      LIMIT 1：唯一键保证至多一行，这条 LIMIT 只是把该前提写死在离使用点最近处，
+      与 SubjectMapper 的 paperTotalScoreColumn 同一思路。
+      键不存在时本查询不返回任何行，MyBatis 对非集合返回值映射为 null——
+      正是 SysConfigMapper#selectValueByKey 契约所要求的行为。
+    -->
+    <select id="selectValueByKey" resultType="java.lang.String">
+        SELECT config_value
+        FROM sys_config
+        WHERE config_key = #{configKey}
+        LIMIT 1
+    </select>
+
+</mapper>

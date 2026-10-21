@@ -1,0 +1,71 @@
+// 最小化重置。本项目不引入 normalize.css：Element Plus 已经处理了表单元素与
+// 盒模型，再加一份只会在个别属性上互相覆盖，排查时看不出是谁赢。
+//
+// 这里必须显式 @use 变量文件：vite.config.ts 的 additionalData 只注入 Vite 亲自
+// 交给 sass 编译的文件（组件里的 <style lang="scss">、index.scss），
+// 经 @use 被拉进来的 partial 拿不到那份注入。少了这一行就是 "Undefined variable"。
+@use './variables.scss' as *;
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  // 桌面优先（01 §1.5）：窗口窄于 1280 时保留横向滚动条，不压缩布局。
+  min-width: $rk-page-min-width;
+  font-size: $rk-font-s;
+  line-height: $rk-line-height;
+  color: $rk-text-1;
+  background-color: $rk-bg-page;
+  // 中文优先字体栈：先系统中文字体，再退回西文与通用族。
+  // 不引外链字体（假设 A2：可能无外网），字体失败会让整页排版塌掉。
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    'Helvetica Neue', Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+figure,
+blockquote,
+dl,
+dd {
+  margin: 0;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+a {
+  // 链接是 14px 正文，落在 4.5:1 的文字底线上。主色因此在 F14 里被改成
+  // #2a72c2（白底 4.90:1）——07 §7.9 的 #409eff 只有 2.78:1，做正文不合规。
+  color: $rk-primary;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+img {
+  max-width: 100%;
+  vertical-align: middle;
+}

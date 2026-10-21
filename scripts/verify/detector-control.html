@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>detector 阳性对照（内联样式）</title>
+    <!--
+      用途：证明 `impeccable detect` 真的在扫描这一页。
+      `[]` 有两种含义——"干净"和"没扫描"——只有先跑一次阳性对照，才能把二者分开。
+      用法：把它放进一个受测站点能提供的位置（如 web/dist/），然后
+
+        impeccable detect --json --viewport 1280x800 http://localhost:4173/detector-control.html
+
+      期望：**两条** finding。
+        · low-contrast        —— 算的是元素的**计算样式**，所以外链 CSS 也看得见
+        · layout-transition   —— 读的是页面里的**内联 <style> 声明**，外链 CSS 看不见
+                                 （实测依据见 detector-control-linked.html 的说明）
+    -->
+    <style>
+      body { background: #ffffff; font-family: system-ui, sans-serif; }
+      /* 低对比度：浅灰字压白底，约 1.9:1（底线 4.5:1） */
+      .bad-contrast { color: #bbbbbb; background: #ffffff; font-size: 14px; }
+      /* 动布局属性，且**没有任何元素带这个类**——死规则照样会被报出来 */
+      .dead-transition { transition: height 0.3s ease-in-out, padding-top 0.3s ease-in-out; }
+    </style>
+  </head>
+  <body>
+    <p class="bad-contrast">这段文字是故意做浅的，用来验证检测器真的在扫描这一页。</p>
+    <p>下面这行是普通文字，用来保证页面上有正常的对比度样本。</p>
+  </body>
+</html>

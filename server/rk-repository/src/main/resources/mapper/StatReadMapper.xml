@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruankao.repository.mapper.StatReadMapper">
+
+    <!-- 列名显式写出；行可能不存在，MyBatis 对单个非集合返回值映射为 null。 -->
+    <select id="selectUserSubject" resultType="com.ruankao.domain.vo.StatUserSubjectRow">
+        SELECT
+            s.answered_count,
+            s.correct_count,
+            s.accuracy,
+            s.mastery,
+            s.exam_count,
+            s.best_score
+        FROM stat_user_subject s
+        WHERE s.user_id = #{userId}
+          AND s.subject_id = #{subjectId}
+        LIMIT 1
+    </select>
+
+    <!--
+      逐日事件计数。为什么从流水现算而不是读 stat_daily：
+      stat_daily 没有 subject_id（04 §4.6），而 05 §5.8 的趋势带 subjectId? 参数。
+      要按科目过滤，只能回到唯一的事实流水。
+      duration_sec 用 DIV 做整数除法；LEAST(...) 与 04 §4.3 的"单题超 10 分钟截断"同一口径。
+    -->
+    <select id="selectDailyTrend" resultType="com.ruankao.domain.vo.StatDailyRow">
+        SELECT
+            DATE(r.answered_at)                                   AS stat_date,
+            COUNT(*)                                              AS answered_count,
+            SUM(CASE WHEN r.is_correct = 1 THEN 1 ELSE 0 END)     AS correct_count,
+            SUM(LEAST(r.duration_ms, 600000)) DIV 1000            AS duration_sec
+        FROM user_answer_record r
+        WHERE r.user_id = #{userId}
+          AND r.subject_id = #{subjectId}
+          AND r.is_correct IS NOT NULL
+          AND r.answered_at &gt;= #{sinceDate}
+        GROUP BY DATE(r.answered_at)
+        ORDER BY stat_date
+        LIMIT #{limit}
+    </select>
+
+    <!-- 纯计数，结果恒为一行，不受 AC-4 的列表上界约束。 -->
+    <select id="countStudyDays" resultType="int">
+        SELECT COUNT(*)
+        FROM stat_daily
+        WHERE user_id = #{userId}
+          AND answered_count &gt; 0
+    </select>
+
+    <!-- 连续天数的遍历输入；LIMIT 400 是 06 §6.10.3 定的上界。 -->
+    <select id="selectActiveDates" resultType="java.time.LocalDate">
+        SELECT stat_date
+        FROM stat_daily
+        WHERE user_id = #{userId}
+          AND answered_count &gt; 0
+        ORDER BY stat_date DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectDailyByDate" resultType="com.ruankao.domain.vo.StatDailyRow">
+        SELECT
+            stat_date,
+            answered_count,
+            correct_count,
+            duration_sec
+        FROM stat_daily
+        WHERE user_id = #{userId}
+          AND stat_date = #{statDate}
+        LIMIT 1
+    </select>
+
+    <select id="selectOutlineStatRows" resultType="com.ruankao.domain.entity.StatUserOutline">
+        SELECT
+            s.user_id,
+            s.subject_id,
+            s.outline_id,
+            s.answered_count,
+            s.correct_count,
+            s.accuracy,
+            s.mastery,
+            s.last_answered_at
+        FROM stat_user_outline s
+        WHERE s.user_id = #{userId}
+          AND s.subject_id = #{subjectId}
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectWeakKp" resultType="com.ruankao.domain.vo.WeakKpRow">
+        SELECT
+            kp.id             AS kp_id,
+            kp.name           AS kp_name,
+            s.answered_count  AS answered_count,
+            s.accuracy        AS accuracy,
+            s.mastery         AS mastery
+        FROM stat_user_kp s
+        JOIN rk_knowledge_point kp ON kp.id = s.kp_id
+        WHERE s.user_id = #{userId}
+          AND s.subject_id = #{subjectId}
+          AND s.mastery &lt; #{maxMastery}
+        ORDER BY s.mastery ASC, s.kp_id ASC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

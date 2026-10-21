@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>detector 对照（外链样式表）</title>
+    <!--
+      与 detector-control.html **内容等价，只把样式从内联 <style> 换成外链 <link>**。
+
+      为什么要有这一对：它把"检测器读不读外链 CSS"这个问题**按检查项分开**回答了。
+      实测（两个文件都放进 web/dist/ 后用同一命令扫）：
+
+        detector-control.html          → low-contrast ✓   layout-transition ✓
+        detector-control-linked.html   → low-contrast ✓   layout-transition ✗
+
+      结论：这两个检查**取数方式不同**。
+        · low-contrast 走的是渲染后元素的**计算样式**，所以外链 CSS 一样看得见；
+        · layout-transition 走的是页面里的**内联 <style> 声明**，外链 CSS **看不见**。
+
+      于是 `impeccable detect` 在同一个应用上会给出不同答案，**只取决于构建方式**：
+        · Vite dev server —— 组件 CSS 由 Vite 以**内联 <style>** 注入 → 报得出来；
+        · 生产构建       —— 组件 CSS 是 <link> 外链           → 报不出来。
+      换句话说：**生产预览上的 `[]` 不等于"规则不存在"**。判断规则在不在，要用
+      scripts/verify/probe.js 去读 document.styleSheets（那才是浏览器眼里的全部规则）。
+    -->
+    <link rel="stylesheet" href="detector-control-linked.css" />
+  </head>
+  <body>
+    <p class="bad-contrast">这段文字是故意做浅的，用来验证检测器真的在扫描这一页。</p>
+    <p>下面这行是普通文字，用来保证页面上有正常的对比度样本。</p>
+  </body>
+</html>

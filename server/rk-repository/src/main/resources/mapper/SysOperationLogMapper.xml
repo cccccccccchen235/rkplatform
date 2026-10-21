@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruankao.repository.mapper.SysOperationLogMapper">
+
+    <!-- created_at 交给 DDL 默认值：审计时间以库时钟为准，不采信应用服务器的时间 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_operation_log
+            (user_id, module, action, target_type, target_id, detail, ip)
+        VALUES
+            (#{userId}, #{module}, #{action}, #{targetType}, #{targetId}, #{detail}, #{ip})
+    </insert>
+
+</mapper>

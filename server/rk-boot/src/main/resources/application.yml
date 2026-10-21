@@ -1,0 +1,145 @@
+# ===============================================================
+# 软考在线学习平台 · 后端配置
+#
+# 约束 AC-1：环境差异只允许来自环境变量。本文件不写任何真实主机名、
+# 端口、口令；${VAR} 不带默认值即表示"未设置则拒绝启动"，错误信息由
+# RequiredEnvValidator 统一给出（它一次列全所有缺失项，而不是报第一个就停）。
+#
+# 变量名以 09 §9.3 为准，本文件不得自行发明变量名；新增键须同步 update 该表。
+#
+# 本地运行（与 09 §9.4 的部署脚本同一套变量）：
+#   set -a; source deploy/.env; set +a
+#   java -jar server/rk-boot/target/rk-boot.jar
+# 或单次提供（口令会进 shell 历史，仅限本地开发）：
+#   MYSQL_PASSWORD=... REDIS_PASSWORD=... java -jar server/rk-boot/target/rk-boot.jar
+# ===============================================================
+
+server:
+  port: ${RK_SERVER_PORT}
+  # 与 09 的容器停止流程配合：先停止接收新请求，再等在途请求收尾
+  shutdown: graceful
+
+spring:
+  application:
+    name: ruankao-server
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+  datasource:
+    # MYSQL_HOST / MYSQL_PORT 带默认值：compose 里它们是固定值（09 §9.2），本地开发默认连本机。
+    # allowPublicKeyRetrieval 是 MySQL 8 默认认证插件 caching_sha2_password 在非 SSL 连接下的必需项，
+    # 缺了会报 "Public Key Retrieval is not allowed"。
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/${MYSQL_DATABASE}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: rk-pool
+      # 上限 20（06 §6.4.1 是这三个数字的唯一定义处，09 §9.12 的运维阈值引用它）；
+      # 空闲压到 2 条，避免闲时白占数据库连接。
+      # 与 server.tomcat.threads.max（默认 200）成对看：线程数远大于连接数时，
+      # 瓶颈是池而不是线程，故障表现为"连接等待超时"——本项目有意保持这一默认组合。
+      maximum-pool-size: 20
+      minimum-idle: 2
+      # 3 秒。库不可用时快速失败，不要吊着请求等到前端超时
+      connection-timeout: 3000
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+      timeout: 3s
+      connect-timeout: 3s
+
+  jackson:
+    time-zone: Asia/Shanghai
+    serialization:
+      # 时间下发字符串而非时间戳。注意：这一项只决定"字符串 vs 数字"，
+      # 字符串的格式由 JacksonConfig 里的 LocalDateTime serializer 决定——
+      # 05 §5.1 的契约是 "yyyy-MM-dd HH:mm:ss"，而 Jackson 默认会输出
+      # ISO-8601（2026-09-27T14:05:03）。两者只差一个 T，但前端按契约解析，
+      # 所以格式必须在 JacksonConfig 显式注册，不能只靠这一行。
+      write-dates-as-timestamps: false
+    # 显式包含 null 字段：前端的字段存在性判断不应依赖"键是否出现"
+    default-property-inclusion: always
+
+# ===============================================================
+# 鉴权（06 §6.5）。不透明 UUID 会话令牌，不使用 JWT：
+# 强制下线靠删除 Redis 中的会话实现，不需要令牌吊销名单。
+# ===============================================================
+sa-token:
+  token-name: Authorization
+  token-prefix: Bearer
+  timeout: ${RK_TOKEN_TIMEOUT}
+  active-timeout: 604800        # 7 天无操作过期
+  is-concurrent: true           # 允许同一账号多端登录
+  token-style: uuid
+  is-log: false                 # 不打印每次鉴权的令牌内容
+  # 只从请求头读取令牌。前端是 SPA，不存在"表单/cookie 提交"场景；
+  # 关掉 cookie 读取可消除一类 CSRF 面（浏览器会自动携带 cookie，但不会自动带 Authorization 头）。
+  is-read-cookie: false
+  is-read-body: false
+  is-read-header: true
+
+# ===============================================================
+# 持久层。实体在 rk-domain 且不得带 MyBatis 注解（06 §6.1），
+# 因此映射全部落在 XML 里，靠 map-underscore-to-camel-case 完成列名转换。
+# ===============================================================
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+# ===============================================================
+# 在线接口文档。生产必须关闭（09 §9.3）：字段结构对攻击者是免费侦察材料。
+# ===============================================================
+knife4j:
+  enable: ${RK_DOC_ENABLED:false}
+  setting:
+    language: zh_cn
+springdoc:
+  api-docs:
+    enabled: ${RK_DOC_ENABLED:false}
+  swagger-ui:
+    enabled: ${RK_DOC_ENABLED:false}
+
+# ===============================================================
+# 管理端点。绑内部端口（09 §9.3：不对外映射），
+# enabled-by-default=false 时全部端点关闭，无需再维护一份 exclude 名单。
+# ===============================================================
+management:
+  server:
+    port: ${RK_MGMT_PORT:8081}
+  endpoints:
+    enabled-by-default: ${RK_ACTUATOR_ENABLED:true}
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      # 不对外暴露数据库/Redis 的连通细节
+      show-details: never
+
+logging:
+  level:
+    # root 覆盖全部 logger，包含 MyBatis 的 Mapper SQL 日志（DEBUG 时才输出）。
+    # 注意：调到 debug 会打印 SQL 参数，其中可能含用户作答内容（约束 AC-3），
+    # 故 09 §9.3 把它定位为"故障期临时调"，用完必须调回。
+    root: ${RK_LOG_LEVEL}
+    com.ruankao: ${RK_LOG_LEVEL}
+    # JDK 与基础镜像自带的 Tomcat Native (APR) 版本通常低于内嵌 Tomcat 的要求，
+    # 每次启动都会打两条 ERROR。Tomcat 会自动退回 NIO 连接器，功能不受影响；
+    # 但一条"每次启动都有、且可以忽略"的 ERROR 会让运维学会忽略 ERROR，
+    # 于是定点关掉这一个类（不是整个包）——它没有其他需要保留的日志。
+    org.apache.catalina.core.AprLifecycleListener: 'OFF'
+  file:
+    name: ${RK_LOG_DIR:logs}/ruankao-server.log
+  logback:
+    rollingpolicy:
+      max-file-size: 50MB
+      max-history: 14
+  pattern:
+    # 两处都带 traceId：控制台用于本地排查，文件用于线上对账
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{traceId:-}] [%thread] %logger{40} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{traceId:-}] [%thread] %logger{40} - %msg%n"

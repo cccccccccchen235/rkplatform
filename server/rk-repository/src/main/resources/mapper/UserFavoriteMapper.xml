@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruankao.repository.mapper.UserFavoriteMapper">
+
+    <!--
+      收藏幂等（05 §5.1「幂等」约定的正交项：收藏/取消收藏可重复调用）。
+      用 INSERT IGNORE 而非普通 INSERT：命中 uk_user_question(user_id, question_id) 时
+      静默跳过，让"重复收藏"变成一条 affected rows = 0 的空操作——既不需要在 Service
+      里先 exists 再 insert（那会引入竞态），也不用把 DuplicateKeyException 翻译成业务码。
+      created_at 交给 DDL 默认值。
+    -->
+    <insert id="insertIgnore">
+        INSERT IGNORE INTO user_favorite
+            (user_id, question_id, subject_id)
+        VALUES
+            (#{userId}, #{questionId}, #{subjectId})
+    </insert>
+
+    <delete id="delete">
+        DELETE FROM user_favorite
+        WHERE user_id = #{userId}
+          AND question_id = #{questionId}
+    </delete>
+
+    <!-- COUNT 恒为一行，不加 LIMIT -->
+    <select id="exists" resultType="int">
+        SELECT COUNT(*)
+        FROM user_favorite
+        WHERE user_id = #{userId}
+          AND question_id = #{questionId}
+    </select>
+
+    <!--
+      收藏练习取题：按 created_at DESC, id DESC。
+      created_at 只精确到秒，同一秒内连收藏多题时仅按时间排序翻页会重复/漏行，
+      故补 id DESC 作稳定次键；idx_user_subject(user_id, subject_id, created_at) 支撑该排序。
+    -->
+    <select id="selectQuestionIds" resultType="java.lang.Long">
+        SELECT question_id
+        FROM user_favorite
+        WHERE user_id = #{userId}
+          AND subject_id = #{subjectId}
+        ORDER BY created_at DESC, id DESC
+        <!-- AC-4：分页查询的上界即必需的 limit 参数 -->
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countBySubject" resultType="long">
+        SELECT COUNT(*)
+        FROM user_favorite
+        WHERE user_id = #{userId}
+          AND subject_id = #{subjectId}
+    </select>
+
+    <!--
+      在给定题目集合中筛出已收藏的 ID。
+      空集合必须显式短路成 AND 1 = 0：<foreach> 对空列表会生成 IN ()，MySQL 直接语法报错，
+      而调用方的"空卷"是合法输入，不能因此 500。
+      入参来自一张练习卷的题（天然有界），LIMIT 1000 只是防御性上界（AC-4）：
+      单卷题量远小于此，不会被截断。
+    -->
+    <select id="selectFavoritedIds" resultType="java.lang.Long">
+        SELECT question_id
+        FROM user_favorite
+        WHERE user_id = #{userId}
+        <choose>
+            <when test="questionIds != null and questionIds.size() > 0">
+                AND question_id IN
+                <foreach collection="questionIds" item="qid" open="(" separator="," close=")">
+                    #{qid}
+                </foreach>
+            </when>
+            <otherwise>
+                AND 1 = 0
+            </otherwise>
+        </choose>
+        LIMIT 1000
+    </select>
+
+</mapper>
