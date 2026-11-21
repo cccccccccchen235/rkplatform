@@ -309,6 +309,13 @@ function goRedo(): void {
   background-color: $rk-bg-card;
   border: 1px solid $rk-border;
   border-radius: $rk-radius-l;
+  // 与科目卡同一条 160ms 缓出：扫描列表时边框给一个轻微的落点，
+  // 不改背景、不加投影（Board-Not-Shadow Rule）。
+  transition: border-color 160ms ease-out;
+
+  &:hover {
+    border-color: $rk-primary;
+  }
 
   &__main {
     flex: 1;

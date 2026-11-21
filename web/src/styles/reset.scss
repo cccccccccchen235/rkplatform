@@ -38,6 +38,17 @@ h2,
 h3,
 h4,
 h5,
+h6 {
+  // 标题短文本用收紧一档的行高（$rk-line-height-heading = 1.4）；
+  // 正文/题干仍从 body 继承 1.6，长文本可读性不受影响。
+  line-height: $rk-line-height-heading;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
 h6,
 p,
 figure,

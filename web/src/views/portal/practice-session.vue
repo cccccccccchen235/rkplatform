@@ -441,6 +441,18 @@ onBeforeUnmount(() => {
   &__main {
     flex: 1;
     padding: $rk-space-xl 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  // 短题（截图里那种两行题干 + 四个选项）只占上方一小块，下面空一大片，
+  // 视觉重心全压在顶栏。用 auto margin 让内容在纵向剩余空间里居中：
+  // 有空间才居中，题目长到超出时 auto margin 自动归零、从顶部开始正常滚动
+  // （用 justify-content:center 会在超高时把题干顶出可视区，不能用）。
+  // 骨架屏 / 错误 / 空态也走同一条路径，加载前后位置不跳。
+  &__main > &__inner {
+    margin-top: auto;
+    margin-bottom: auto;
   }
 
   &__skeleton {

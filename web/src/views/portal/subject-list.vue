@@ -238,6 +238,11 @@ function canStartExam(subject: SubjectVO): boolean {
   // 颜色继承，下划线去掉，可点性由 hover 时的边框与末行文案表达。
   color: inherit;
   text-decoration: none;
+  // 边框色与末行文案的变化走同一条 160ms 指数缓出，和设计系统里书脊的
+  // spine-border 动效同一口径；鼠标滑过时不再"啪"地跳色。
+  transition:
+    border-color 160ms ease-out,
+    color 160ms ease-out;
 
   &:hover {
     border-color: $rk-primary;
@@ -250,6 +255,7 @@ function canStartExam(subject: SubjectVO): boolean {
   &__go {
     color: $rk-text-3;
     font-size: $rk-font-xs;
+    transition: color 160ms ease-out;
   }
 
   &__head {
@@ -283,6 +289,10 @@ function canStartExam(subject: SubjectVO): boolean {
 
     &--empty {
       color: $rk-text-3;
+      // "暂无简介"是一行事实，不是三行 placebo。留三行的高度会在
+      // 标题与事实表之间撑出一块空白，让人以为简介加载失败了。
+      // 卡片整体仍由网格同行等高，卷面行照旧 margin-top:auto 沉底。
+      min-height: auto;
     }
   }
 

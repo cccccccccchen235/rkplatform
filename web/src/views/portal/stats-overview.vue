@@ -257,7 +257,12 @@ onMounted(async () => {
         </p>
         <el-empty v-if="outlineRows.length === 0" description="该科目还没有章节树" />
         <ul v-else class="outline-list">
-          <li v-for="row in outlineRows" :key="row.node.id" class="outline-row">
+          <li
+            v-for="row in outlineRows"
+            :key="row.node.id"
+            class="outline-row"
+            :class="{ 'outline-row--weak': row.node.answeredCount > 0 && isWeak(row.node.mastery) }"
+          >
             <span class="outline-row__name" :style="{ paddingLeft: `${row.depth * 20}px` }">
               {{ row.node.name }}
             </span>
@@ -403,6 +408,11 @@ onMounted(async () => {
   align-items: center;
   gap: $rk-space-m;
   font-size: $rk-font-s;
+  // 四十来行同色条，鼠标扫读时容易串行。hover 用页面底色（不是新颜色、
+  // 不是投影）给当前行一个落点；键盘暂无逐行交互，故不做 focus 态。
+  &:hover {
+    background-color: $rk-bg-page;
+  }
 
   &__name {
     color: $rk-text-1;
@@ -430,6 +440,20 @@ onMounted(async () => {
     display: block;
     height: 100%;
     background-color: $rk-primary;
+  }
+
+  // "练过但没掌握"是这一页最需要被扫出来的状态，却和已掌握的条同为蓝色。
+  // 用形状（硬边斜纹）而非第二个颜色标记它——DESIGN.md 的
+  // Shape-Carries-The-Encoding Rule：小尺寸上靠形状比靠相近色相可靠。
+  // class 由模板按与 el-tag 同一个 isWeak 判断给出，两处口径不会分叉。
+  &--weak .outline-row__bar {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent 0,
+      transparent 3px,
+      rgba(255, 255, 255, 0.55) 3px,
+      rgba(255, 255, 255, 0.55) 5px
+    );
   }
 
   &__value {
@@ -463,6 +487,10 @@ onMounted(async () => {
   gap: $rk-space-m;
   padding: $rk-space-s 0;
   border-bottom: 1px solid $rk-border;
+
+  &:hover {
+    background-color: $rk-bg-page;
+  }
 
   &:last-child {
     border-bottom: none;

@@ -44,11 +44,23 @@
   padding: 0 $rk-space-xl;
 }
 
+// 键盘焦点环兜底。DESIGN.md 规定焦点环 = 2px 主色 + 2px offset（图形，≥3:1）；
+// 此前只有首页书脊等少数元素自己声明了，普通链接/原生按钮只能用浏览器默认环。
+//
+// 只兜底原生元素：Element Plus 组件（.el-button / .el-input 等）自带焦点样式，
+// 一并覆盖会造成双环。书脊 .spine 也已有更具体的声明，按层叠顺序它赢，不受影响。
+a:focus-visible,
+button:focus-visible:not(.el-button) {
+  outline: 2px solid $rk-primary;
+  outline-offset: 2px;
+}
+
 // 页面级标题，用于各页 <h1>。
 .rk-page-title {
   font-size: $rk-font-xl;
   font-weight: 600;
   color: $rk-text-1;
+  // line-height 由 h1 的通用规则给出（$rk-line-height-heading），这里不重复声明。
   margin-bottom: $rk-space-l;
 }
 
