@@ -11,6 +11,7 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import BrandMark from '@/components/common/BrandMark.vue'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
@@ -58,7 +59,8 @@ async function handleLogout(): Promise<void> {
   <div class="admin-layout">
     <aside class="admin-sider" :class="{ 'is-collapsed': collapsed }">
       <router-link :to="{ name: 'home' }" class="admin-sider__brand">
-        <span class="admin-sider__brand-mark">软考</span>
+        <BrandMark :size="28" class="admin-sider__brand-icon" />
+        <span v-show="!collapsed" class="admin-sider__brand-mark">软考</span>
         <span v-show="!collapsed" class="admin-sider__brand-text">管理后台</span>
       </router-link>
 
@@ -129,7 +131,7 @@ async function handleLogout(): Promise<void> {
     height: 60px;
     flex-shrink: 0;
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: center;
     gap: $rk-space-s;
     border-bottom: 1px solid $rk-border;
@@ -139,6 +141,11 @@ async function handleLogout(): Promise<void> {
     &:hover {
       text-decoration: none;
     }
+  }
+
+  &__brand-icon {
+    flex-shrink: 0;
+    display: flex;
   }
 
   &__brand-mark {

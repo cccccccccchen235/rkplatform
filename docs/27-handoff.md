@@ -16,16 +16,16 @@
 | 问题 | 答案 |
 | --- | --- |
 | 这是什么 | 软考在线学习平台（非商业、无付费）。monorepo：`server/` 后端 + `web/` 前端 + `deploy/` 部署 + `scripts/` 工具 + `docs/` 文档 |
-| 做到哪了 | **P0~P4 完成** + **P5 模拟机考完成**（`30` + `31` + `32`）+ **P6 学习统计**（`28`/`29`）+ **考生端个人中心 M1**（`33`，补完 07 路由表最后一个考生端页面）。P7 部署、P8 收尾未开始 |
-| 现在能跑吗 | **能**。后端 8080、前端 5173，题库有 250 道**已发布**的单选题（科目 SD）。✅ **本轮验证时服务是起着的**（后端 8080/8081 + `pnpm -C web dev` 5173；停止/重启见 §3） |
+| 做到哪了 | **P0~P4 完成** + **P5 模拟机考完成**（`30` + `31` + `32`）+ **P6 学习统计**（`28`/`29`）+ **考生端个人中心 M1**（`33`，补完 07 路由表最后一个考生端页面）+ **站点图标与管理端入口**（`34`）。P7 部署、P8 收尾未开始 |
+| 现在能跑吗 | **能**。后端 8080、nginx 80 托管前端（5173 已停用），题库有 250 道**已发布**的单选题（科目 SD）。✅ **本轮验证时服务是起着的**（后端 8080/8081 + nginx 80；停止/重启见 §3） |
 | 最大的风险 | **仓库 0 个提交**——整个项目只是工作区里的未跟踪文件（见 §2.4） |
-| 先读哪几篇 | 想动手 → 本篇；想改接口 → `05` + `04`；想知道阶段与验收 → `10`；想知道最近一轮 → `33` |
+| 先读哪几篇 | 想动手 → 本篇；想改接口 → `05` + `04`；想知道阶段与验收 → `10`；想知道最近一轮 → `34` |
 
 ---
 
 ## 1. 文档地图（谁是权威）
 
-**冲突裁决顺序：`33` > `32` > `31` > `30` > `29` > `28` > `26` > `25` > `24` > `23` > `22`；跨阶段沿用 `17` > `16` > `15` > `14` > `13` > `12` > `11`。**
+**冲突裁决顺序：`34` > `33` > `32` > `31` > `30` > `29` > `28` > `26` > `25` > `24` > `23` > `22`；跨阶段沿用 `17` > `16` > `15` > `14` > `13` > `12` > `11`。**
 （`27` 是本篇"当前现场"，只做索引、不定契约，故不进裁决链。）
 （`01`~`26` 一律不回改；漏掉的事情由新篇登记，而不是回头改旧篇。）
 
@@ -39,7 +39,8 @@
 | [02-domain-model.md](02-domain-model.md) | 领域模型、枚举、**版权策略 GR-1~GR-3** |
 | [09-deployment.md](09-deployment.md) | 容器化部署设计（**尚未落地**） |
 | [26-p4-practice-loop.md](26-p4-practice-loop.md) | 最近一轮：P4 练习闭环 + 首页去噪 + **对 05/06 的 9 条偏离登记** |
-| [33-profile-page.md](33-profile-page.md) | 最近一轮：考生端个人中心 `/profile`（M1）+ 05 §5.3 第 5~7 条三个接口 + **对 05/06/07 的 7 条偏离登记** |
+| [33-profile-page.md](33-profile-page.md) | 上一轮：考生端个人中心 `/profile`（M1）+ 05 §5.3 第 5~7 条三个接口 + **对 05/06/07 的 7 条偏离登记** |
+| [34-icon-and-admin-entry.md](34-icon-and-admin-entry.md) | 最近一轮：书脊图标（favicon + 顶栏品牌图标）+ 管理员导航项「管理端」；纯前端增量，不改 04/05 契约 |
 | [32-p5-paper-template-admin.md](32-p5-paper-template-admin.md) | P5 管理端卷面模板配置（05 §5.10 第 51/52 条）+ 服务端五条校验 + **对 05/07 的 7 条偏离登记** |
 | [31-p5-exam-frontend.md](31-p5-exam-frontend.md) | P5 考生端三页（模拟考中心 / 答题页 / 成绩详情）+ **对 05/07 的 4 条偏离登记** |
 | [25-progress-import-and-fixes.md](25-progress-import-and-fixes.md) | 题库导入、服务启动、`StpInterface` 修复、客户端异常家族修复 |
@@ -126,6 +127,10 @@ $ git -C d:\Project status --short
 | MySQL | 8.x，库名 `ruankao`；口令在 `deploy/.env` 的 `MYSQL_ROOT_PASSWORD` |
 | **Redis** | `D:\Redis-x64-3.2.100\redis-cli.exe`。⚠️ **实际是 3.2.100，设计文档写的是 Redis 7**；`--no-auth-warning`、`--scan` 等 5+ 个参数**不可用**。口令在 `deploy/.env` 的 `REDIS_PASSWORD` |
 | Chrome | `C:\Program Files\Google\Chrome\Application\chrome.exe`（截图/度量用，见 §4.3） |
+
+**2026-11-20 换机记录（本机 AABB）**：JDK 21 / Maven `D:\apache-maven\bin\mvn.cmd` / Node 22 均在 PATH；pnpm 不在 PATH，已用隔离方式安装到 `C:\Users\AABB\.workbuddy-ai\binaries\node\workspace\node_modules\pnpm\bin\pnpm.cjs`（9.15.9）。MySQL 为 `D:\mysql-8.0.23-winx64\bin\mysql.exe`（本机是空库，已按 §3 重建 `ruankao` 并导入 250 题 + 回填 admin 哈希）；Redis 为 `D:\Redis-x64-3.2.100\redis-cli.exe`，原无 requirepass，已 `CONFIG SET` 一个本地开发口令并写入 `deploy/.env`。部署/启动时曾出现 `server.port` 被解析成随机值 50642 导致启动失败，**启动命令需显式追加 `--server.port=8080 --management.server.port=8081`**；此时 8080/8081 正常监听、health=UP、登录回路通过。Nginx 本次未使用（后于 2026-11-20 补了本地开发配置，见下）。另：首次打开页面时 Vite 会重优化依赖并删除 `web/node_modules/.vite/deps_temp_*`；该批量删除被 WorkBuddy 的安全守卫拦截会导致 dev 进程退出。已在 `web/vite.config.ts` 加 `optimizeDeps.noDiscovery=true` + 全部裸包 `include`，启动时一次性预打包，运行期不再重优化；若手动改依赖后仍出现同类退出，删掉 `web/node_modules/.vite` 重启即可。
+
+**2026-11-20 前端改由 nginx 托管**：`pnpm -C web build` 产出 `web/dist`，本地配置 `deploy/nginx/local.conf`（80 端口、SPA `try_files` 回退、`/api/` 与 `/uploads/` 代理到 127.0.0.1:8080），nginx 为 `D:\nginx-1.30.6\nginx.exe`。启动需带 `-p D:\nginx-1.30.6\ -c <local.conf> -g "daemon off;"`，否则 Windows 下子进程会被回收。实测首页/子路由/API 代理/登录回路均 200；Vite 5173 不再使用。这只是本地开发托管，P7 的生产 compose/Nginx 仍未交付。
 
 ### 3.2 后端
 
@@ -359,3 +364,6 @@ mysql -u root "-p$pw" -B ruankao -e "SELECT COUNT(*) FROM rk_question WHERE stat
 | 2026-10-05 | P5 考生端三页落地（`31`）：模拟考中心 / 答题页（答题卡 + 倒计时 + 分节切换 + 论文草稿）/ 成绩详情；`stores/exam.ts` + `api/exam.ts` + 4 个 `components/exam/*`。管理端卷面模板配置仍 ⬜；CDP 截图因环境禁止启动 Chrome 未做 |
 | 2026-10-05 | P5 管理端卷面模板配置落地（`32`）：`GET/PUT /admin/paper-templates/{subjectId}` + 服务端五条校验（满分口径不符即 `1001`）+ `/admin/paper-templates` 页（蓝图填充 / 只读派生序号与满分 / 即时校验）；验收脚本 24 条断言全通过。**P5 至此完成**；CDP 截图仍未做（Chrome 被策略拦） |
 | 2026-10-05 | 考生端个人中心落地（`33`）：`PUT /users/me` / `/users/me/password` / `/users/me/current-subject` 三个接口 + `/profile` 页（基本信息 / 改昵称 / 改密码 / 当前科目 / 退出）+ 顶栏「我的」与科目下拉接通 + `mustChangePassword` 强制改密分支。验收脚本 17 条断言全通过；**07 路由表的考生端页面至此全部落地**，下一步进入 P7 部署 |
+| 2026-11-20 | 换机后完成本地启动：由空库重建 `ruankao`（schema + init-data + 三份大纲 + verify 全绿）、导入 250 题、回填 admin 哈希；生成 `deploy/.env` 并给 Redis 设本地口令；Maven 构建后端 + 隔离 pnpm 安装前端依赖。后端需显式 `--server.port=8080 --management.server.port=8081` 启动；8080/8081/5173 正常，登录回路与前端代理均通过（详见 §3.1）。同日前端改由 nginx 托管：`web/dist` + `deploy/nginx/local.conf`（80 端口），5173 不再使用 |
+| 2026-11-20 | 前端改用 nginx：新增 `deploy/nginx/local.conf`，`pnpm -C web build` 产出 dist，nginx 80 托管静态资源并代理 `/api`、`/uploads` 到后端 8080；实测首页、SPA 子路由、API 代理、管理员登录与 `/users/me` 全通过 |
+| 2026-11-20 | 站点图标与管理端入口（`34`）：新增 `web/public/favicon.{svg,ico}` 与 `BrandMark.vue`；考生端顶栏与管理后台侧栏品牌区都加图标（后台折叠态只留图标），导航末尾加仅管理员可见的「管理端」链接跳 `/admin`。两轮内容合并计入 `34`，未另起文档；type-check / lint / build 通过，nginx 上 favicon 与页面均 200；未做浏览器渲染取证 |

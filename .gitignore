@@ -34,6 +34,8 @@ scripts/generate/**/*.csv
 target/
 node_modules/
 dist/
+# 本机 WorkBuddy 的安全守卫可能阻止 Vite 清空 dist，构建前改名留下的旧产物
+web/dist_old*/
 *.jar
 *.war
 *.class

@@ -8,6 +8,7 @@
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import BrandMark from '@/components/common/BrandMark.vue'
 import { useSubjectStore } from '@/stores/subject'
 import { useUserStore } from '@/stores/user'
 
@@ -62,7 +63,8 @@ async function handleSubjectChange(subjectId: string): Promise<void> {
     <header class="portal-header">
       <div class="portal-header__inner rk-container">
         <router-link :to="{ name: 'home' }" class="portal-header__brand">
-          <span class="portal-header__brand-mark" aria-hidden="true">软考</span>
+          <BrandMark :size="28" class="portal-header__brand-icon" />
+          <span class="portal-header__brand-mark">软考</span>
           <span class="portal-header__brand-text">在线学习平台</span>
         </router-link>
 
@@ -91,6 +93,14 @@ async function handleSubjectChange(subjectId: string): Promise<void> {
             </router-link>
             <router-link :to="{ name: 'profile' }" :class="{ 'is-active': activeMenu === 'profile' }">
               我的
+            </router-link>
+            <!--
+              管理端入口只对管理员渲染（user.isAdmin 来自 /users/me 的 role）。
+              前端隐藏只是体验层，不是安全边界：/admin/* 的路由守卫与后端接口
+              已经各自校验 ADMIN，普通用户直接敲地址也进不去。
+            -->
+            <router-link v-if="user.isAdmin" :to="{ path: '/admin' }" class="portal-header__admin-link">
+              管理端
             </router-link>
           </template>
         </nav>
@@ -165,6 +175,11 @@ async function handleSubjectChange(subjectId: string): Promise<void> {
     }
   }
 
+  &__brand-icon {
+    align-self: center;
+    flex-shrink: 0;
+  }
+
   &__brand-mark {
     font-size: $rk-font-m;
     font-weight: 700;
@@ -198,6 +213,12 @@ async function handleSubjectChange(subjectId: string): Promise<void> {
         color: $rk-primary;
         border-bottom-color: $rk-primary;
       }
+    }
+
+    // 管理端入口用主色文字与考生端导航区分，但不加按钮框：
+    // 顶栏只放「去哪儿」，主按钮留给页面自己的动作（DESIGN.md）。
+    .portal-header__admin-link {
+      color: $rk-primary;
     }
   }
 

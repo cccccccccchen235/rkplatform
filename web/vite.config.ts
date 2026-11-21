@@ -36,6 +36,27 @@ export default defineConfig({
     },
   },
 
+  // 本机 WorkBuddy 对 node_modules/.vite/deps_temp_* 的批量删除有安全守卫：
+  // 运行期按需发现新依赖会触发重优化并删临时目录，导致 dev 进程退出。
+  // 因此关闭自动发现，启动时一次性预打包全部裸包；Element Plus 组件的子路径样式
+  // 仍由 unplugin-vue-components 生成，直接走 node_modules 的 ESM，不参与预打包。
+  optimizeDeps: {
+    noDiscovery: true,
+    include: [
+      'vue',
+      'vue-router',
+      'pinia',
+      'axios',
+      'element-plus',
+      'katex',
+      'markdown-it',
+      'echarts/core',
+      'echarts/charts',
+      'echarts/components',
+      'echarts/renderers',
+    ],
+  },
+
   server: {
     port: 5173,
     proxy: {
