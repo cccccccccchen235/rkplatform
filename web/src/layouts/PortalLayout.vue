@@ -135,7 +135,16 @@ async function handleSubjectChange(subjectId: string): Promise<void> {
     </header>
 
     <main class="portal-main">
-      <router-view />
+      <!--
+        页面切换淡入（用户裁决，docs/36）。用 v-slot + component 而不是直接包 router-view：
+        Transition 需要一个真实根元素做进出场，v-slot 模式把当前路由组件交给它。
+        管理端的 router-view 不套 Transition，所以管理端没有这层动效（"管理端不碰"）。
+      -->
+      <router-view v-slot="{ Component }">
+        <Transition name="rk-page" mode="out-in">
+          <component :is="Component" />
+        </Transition>
+      </router-view>
     </main>
   </div>
 </template>
@@ -145,18 +154,22 @@ async function handleSubjectChange(subjectId: string): Promise<void> {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  // 页面底渐变由 #app 提供；这一层透明，让渐变贯通。
+  background-color: transparent;
 }
 
 .portal-header {
-  background-color: $rk-bg-card;
-  border-bottom: 1px solid $rk-border;
+  // 柔和顶栏：白底 + 一条极淡的蓝调阴影取代原来的硬边框（Soft Lift）。
+  background-color: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 3px rgba(42, 114, 194, 0.08);
   // 顶栏常驻：科目地图很长时，用户仍能随时切换科目或退出
   position: sticky;
   top: 0;
   z-index: 10;
 
   &__inner {
-    height: 60px;
+    height: 64px;
     display: flex;
     align-items: center;
     gap: $rk-space-xl;
@@ -183,40 +196,55 @@ async function handleSubjectChange(subjectId: string): Promise<void> {
   &__brand-mark {
     font-size: $rk-font-m;
     font-weight: 700;
-    // 字标是浅底上的文字，走 4.5:1 底线。主色自 F14 起是 #2a72c2（4.90:1）。
+    // 字标是浅底上的文字，走 4.5:1 底线。主色 #2a72c2（白底 4.90:1）。
     color: $rk-primary;
+    letter-spacing: -0.01em;
   }
 
   &__brand-text {
     font-size: $rk-font-m;
-    font-weight: 600;
+    font-weight: 500;
+    color: $rk-text-2;
   }
 
   &__nav {
     display: flex;
-    gap: $rk-space-xl;
-    flex-shrink: 0;
+    align-items: center;
+    gap: $rk-space-xs;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow-x: auto;
+    // 窄屏时导航可横向滚动，不把操作区挤出去
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+      display: none;
+    }
 
     a {
       color: $rk-text-2;
-      padding: $rk-space-xs 0;
-      border-bottom: 2px solid transparent;
+      // 柔和胶囊：当前项是浅蓝底 + 主色字（既有底色也有文字，不单靠颜色）
+      padding: $rk-space-xs $rk-space-m;
+      border-radius: 999px;
+      white-space: nowrap;
+      transition:
+        background-color 160ms ease-out,
+        color 160ms ease-out;
 
-      // 导航是 14px 文字 + 2px 细线，两处都在页面底（#f5f7fa）上。
-      // 主色自 F14 起是 #2a72c2（页面底 4.57:1），文字与细线都过线。
       &:hover {
         color: $rk-primary;
+        background-color: rgba($rk-primary, 0.06);
         text-decoration: none;
       }
 
       &.is-active {
         color: $rk-primary;
-        border-bottom-color: $rk-primary;
+        background-color: rgba($rk-primary, 0.1);
+        font-weight: 500;
       }
     }
 
     // 管理端入口用主色文字与考生端导航区分，但不加按钮框：
-    // 顶栏只放「去哪儿」，主按钮留给页面自己的动作（DESIGN.md）。
+    // 顶栏只放「去哪儿」，主按钮留给页面自己的动作。
     .portal-header__admin-link {
       color: $rk-primary;
     }
@@ -231,7 +259,7 @@ async function handleSubjectChange(subjectId: string): Promise<void> {
   }
 
   &__subject {
-    width: 200px;
+    width: 180px;
   }
 
   &__user {
@@ -241,5 +269,60 @@ async function handleSubjectChange(subjectId: string): Promise<void> {
 
 .portal-main {
   flex: 1;
+  // Transition 进出场时给一个定位上下文，out-in 模式下无需绝对定位
+  min-width: 0;
+}
+
+// ---------------- 响应式（docs/36）：三档断点 ----------------
+@media (max-width: 1080px) {
+  .portal-header {
+    &__inner {
+      gap: $rk-space-l;
+    }
+    &__nav {
+      gap: 2px;
+      a {
+        padding: $rk-space-xs $rk-space-s;
+      }
+    }
+    &__subject {
+      width: 150px;
+    }
+  }
+}
+
+@media (max-width: 760px) {
+  .portal-header {
+    &__inner {
+      height: auto;
+      min-height: 56px;
+      flex-wrap: wrap;
+      gap: $rk-space-s $rk-space-m;
+      padding-top: $rk-space-s;
+      padding-bottom: $rk-space-s;
+    }
+    // 窄屏：品牌与操作在第一行，导航独占第二行
+    &__nav {
+      order: 3;
+      flex-basis: 100%;
+      border-top: 1px solid $rk-soft-border;
+      padding-top: $rk-space-xs;
+    }
+    &__actions {
+      gap: $rk-space-s;
+    }
+    &__subject {
+      width: 132px;
+    }
+    &__user {
+      display: none;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-header__nav a {
+    transition: none;
+  }
 }
 </style>

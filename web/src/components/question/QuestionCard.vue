@@ -223,10 +223,11 @@ const hasScorePoints = computed(() => (props.question.scorePoints?.length ?? 0) 
 
 <style scoped lang="scss">
 .question-card {
-  padding: $rk-space-l;
+  padding: $rk-space-xl;
   background-color: $rk-bg-card;
-  border: 1px solid $rk-border;
-  border-radius: $rk-radius-l;
+  border: 1px solid $rk-soft-border;
+  border-radius: $rk-soft-radius-card;
+  box-shadow: $rk-soft-shadow;
 
   &__head {
     display: flex;
@@ -235,13 +236,13 @@ const hasScorePoints = computed(() => (props.question.scorePoints?.length ?? 0) 
     gap: $rk-space-m;
     padding-bottom: $rk-space-m;
     margin-bottom: $rk-space-l;
-    border-bottom: 1px solid $rk-border;
+    border-bottom: 1px solid $rk-soft-border;
   }
 
   &__type {
     padding: 0 $rk-space-s;
-    border: 1px solid $rk-border;
-    border-radius: $rk-radius-s;
+    border: 1px solid $rk-soft-border;
+    border-radius: $rk-radius-m;
     color: $rk-text-1;
     font-size: $rk-font-xs;
     line-height: 20px;
@@ -272,8 +273,10 @@ const hasScorePoints = computed(() => (props.question.scorePoints?.length ?? 0) 
     font-size: $rk-font-xs;
   }
 
+  // 题干行高放宽到 1.75：长文本更易读、减少屏上压迫感（docs/36）。
   &__stem {
     margin-bottom: $rk-space-l;
+    line-height: $rk-soft-line-height-body;
   }
 
   &__images {
@@ -339,16 +342,21 @@ const hasScorePoints = computed(() => (props.question.scorePoints?.length ?? 0) 
 
 // 选项行：默认中性，已判分时用描边 + 文字共同表达对错（不靠颜色单独承载信息）
 .qoption {
-  padding: $rk-space-s $rk-space-m;
-  border: 1px solid $rk-border;
-  border-radius: $rk-radius-m;
+  padding: $rk-space-m;
+  border: 1px solid $rk-soft-border;
+  border-radius: $rk-soft-radius-control;
+  transition:
+    border-color 160ms ease-out,
+    background-color 160ms ease-out;
 
   &--correct {
     border-color: $rk-success;
+    background-color: rgba($rk-success, 0.06);
   }
 
   &--wrong {
     border-color: $rk-danger;
+    background-color: rgba($rk-danger, 0.06);
   }
 
   &__key {

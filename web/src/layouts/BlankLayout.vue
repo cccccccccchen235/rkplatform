@@ -6,7 +6,12 @@
 
 <template>
   <div class="blank-layout">
-    <router-view />
+    <!-- 页面淡入：与 PortalLayout 同一套 rk-page 过渡（docs/36）。管理端不套用。 -->
+    <router-view v-slot="{ Component }">
+      <Transition name="rk-page" mode="out-in">
+        <component :is="Component" />
+      </Transition>
+    </router-view>
   </div>
 </template>
 
@@ -16,6 +21,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: $rk-bg-page;
+  // 透明，透出 #app 的蓝白渐变；答题页自己铺满背景，登录/注册居中其上。
+  background-color: transparent;
 }
 </style>

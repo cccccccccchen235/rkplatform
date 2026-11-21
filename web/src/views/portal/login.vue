@@ -117,12 +117,14 @@ async function handleSubmit(): Promise<void> {
 <style scoped lang="scss">
 .auth-page {
   width: 400px;
+  max-width: calc(100vw - 32px);
 }
 
 .auth-card {
   background-color: $rk-bg-card;
-  border: 1px solid $rk-border;
-  border-radius: $rk-radius-l;
+  border: 1px solid $rk-soft-border;
+  border-radius: $rk-soft-radius-card;
+  box-shadow: $rk-soft-shadow;
   padding: $rk-space-xl * 1.5;
 
   &__header {

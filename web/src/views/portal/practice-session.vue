@@ -377,7 +377,8 @@ onBeforeUnmount(() => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: $rk-bg-page;
+  // 透明，透出 #app 的蓝白渐变（docs/36）。
+  background-color: transparent;
 
   &__inner {
     width: 100%;
@@ -390,8 +391,9 @@ onBeforeUnmount(() => {
     position: sticky;
     top: 0;
     z-index: 10;
-    background-color: $rk-bg-card;
-    border-bottom: 1px solid $rk-border;
+    background-color: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 1px 3px rgba(42, 114, 194, 0.08);
   }
 
   &__topbar &__inner {
@@ -417,8 +419,8 @@ onBeforeUnmount(() => {
 
   &__mode {
     padding: 0 $rk-space-s;
-    border: 1px solid $rk-border;
-    border-radius: $rk-radius-s;
+    border: 1px solid $rk-soft-border;
+    border-radius: $rk-radius-m;
     color: $rk-text-2;
     font-size: $rk-font-xs;
     line-height: 20px;
@@ -468,15 +470,23 @@ onBeforeUnmount(() => {
   &__bottombar {
     position: sticky;
     bottom: 0;
-    background-color: $rk-bg-card;
-    border-top: 1px solid $rk-border;
+    background-color: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 -1px 3px rgba(42, 114, 194, 0.08);
     padding: $rk-space-m 0 $rk-space-s;
   }
 
   &__actions {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: $rk-space-s;
+
+    @media (max-width: 600px) {
+      &__end {
+        margin-left: 0;
+      }
+    }
   }
 
   // 结束练习是这一页的终点动作，推到最右，与"上一题/下一题"分开

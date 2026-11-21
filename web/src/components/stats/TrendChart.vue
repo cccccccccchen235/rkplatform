@@ -33,15 +33,15 @@ function render(): void {
   if (!chart) return
   const primary = token('--rk-primary', '#2a72c2')
   const success = token('--rk-success', '#2a6e2e')
-  const border = token('--rk-border', '#dcdfe6')
+  const softBorder = token('--rk-soft-border', '#dbe7f4')
   const text3 = token('--rk-text-3', '#6b6e76')
 
   chart.setOption(
     {
-      // 设计系统全站无投影（DESIGN.md）：ECharts 的 tooltip 默认带 box-shadow，显式关掉。
+      // Soft Focus（docs/36）：tooltip 用柔和蓝调边框 + 微阴影，不再是硬线框。
       tooltip: {
         trigger: 'axis',
-        extraCssText: `box-shadow: none; border: 1px solid ${border};`,
+        extraCssText: `box-shadow: 0 8px 24px rgba(42,114,194,.12); border: 1px solid ${softBorder}; border-radius: 12px;`,
       },
       legend: { data: ['作答数', '正确数'], right: 0, top: 0, textStyle: { color: text3 } },
       grid: { left: 4, right: 4, top: 36, bottom: 0, containLabel: true },
@@ -50,13 +50,13 @@ function render(): void {
         boundaryGap: false,
         // 只显示 MM-DD：横轴是密集的日历格子，年份每格重复一次没有信息量
         data: props.points.map((p) => p.date.slice(5)),
-        axisLine: { lineStyle: { color: border } },
+        axisLine: { lineStyle: { color: softBorder } },
         axisLabel: { color: text3 },
       },
       yAxis: {
         type: 'value',
         minInterval: 1,
-        splitLine: { lineStyle: { color: border } },
+        splitLine: { lineStyle: { color: softBorder } },
         axisLabel: { color: text3 },
       },
       series: [

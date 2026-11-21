@@ -302,9 +302,10 @@ onMounted(load)
 
   &__card {
     background-color: $rk-bg-card;
-    border: 1px solid $rk-border;
-    border-radius: $rk-radius-l;
-    padding: $rk-space-l;
+    border: 1px solid $rk-soft-border;
+    border-radius: $rk-soft-radius-card;
+    box-shadow: $rk-soft-shadow;
+    padding: $rk-space-xl;
     margin-bottom: $rk-space-l;
   }
 

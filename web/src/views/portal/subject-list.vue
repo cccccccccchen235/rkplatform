@@ -223,6 +223,14 @@ function canStartExam(subject: SubjectVO): boolean {
   > li {
     display: flex;
   }
+
+  // 响应式（docs/36）：宽屏三列 → 中屏两列 → 窄屏单列。
+  @media (max-width: 1080px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (max-width: 700px) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .subject-card {
@@ -230,10 +238,11 @@ function canStartExam(subject: SubjectVO): boolean {
   display: flex;
   flex-direction: column;
   gap: $rk-space-m;
-  padding: $rk-space-l;
+  padding: $rk-space-xl;
   background-color: $rk-bg-card;
-  border: 1px solid $rk-border;
-  border-radius: $rk-radius-l;
+  border: 1px solid $rk-soft-border;
+  border-radius: $rk-soft-radius-card;
+  box-shadow: $rk-soft-shadow;
   // 链接默认的蓝字下划线会把整张卡片变成"一大片链接"，这里只保留它可点的事实：
   // 颜色继承，下划线去掉，可点性由 hover 时的边框与末行文案表达。
   color: inherit;
@@ -242,10 +251,14 @@ function canStartExam(subject: SubjectVO): boolean {
   // spine-border 动效同一口径；鼠标滑过时不再"啪"地跳色。
   transition:
     border-color 160ms ease-out,
+    box-shadow $rk-soft-duration $rk-soft-ease,
+    transform $rk-soft-duration $rk-soft-ease,
     color 160ms ease-out;
 
   &:hover {
-    border-color: $rk-primary;
+    border-color: rgba($rk-primary, 0.5);
+    transform: translateY(-3px);
+    box-shadow: $rk-soft-shadow-hover;
 
     .subject-card__go {
       color: $rk-primary;

@@ -216,10 +216,11 @@ async function reload(): Promise<void> {
 }
 
 .outline-panel {
-  padding: $rk-space-m;
+  padding: $rk-space-l;
   background-color: $rk-bg-card;
-  border: 1px solid $rk-border;
-  border-radius: $rk-radius-l;
+  border: 1px solid $rk-soft-border;
+  border-radius: $rk-soft-radius-card;
+  box-shadow: $rk-soft-shadow;
 }
 
 .outline-row {
@@ -242,8 +243,8 @@ async function reload(): Promise<void> {
 
   &__leaf {
     padding: 0 $rk-space-xs;
-    border: 1px solid $rk-border;
-    border-radius: $rk-radius-s;
+    border: 1px solid $rk-soft-border;
+    border-radius: $rk-radius-m;
     color: $rk-text-3;
     font-size: $rk-font-xs;
   }
@@ -251,6 +252,6 @@ async function reload(): Promise<void> {
 
 :deep(.el-tree-node__content) {
   height: 36px;
-  border-radius: $rk-radius-s;
+  border-radius: $rk-radius-m;
 }
 </style>

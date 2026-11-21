@@ -273,8 +273,8 @@ async function reload(): Promise<void> {
 
   &__level {
     padding: 0 $rk-space-s;
-    border: 1px solid $rk-border;
-    border-radius: $rk-radius-s;
+    border: 1px solid $rk-soft-border;
+    border-radius: $rk-radius-m;
     color: $rk-text-2;
     font-size: $rk-font-xs;
     line-height: 20px;
@@ -291,11 +291,19 @@ async function reload(): Promise<void> {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: $rk-space-l;
-  padding: $rk-space-l;
+  padding: $rk-space-xl;
   margin-bottom: $rk-space-xl;
   background-color: $rk-bg-card;
-  border: 1px solid $rk-border;
-  border-radius: $rk-radius-l;
+  border: 1px solid $rk-soft-border;
+  border-radius: $rk-soft-radius-card;
+  box-shadow: $rk-soft-shadow;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .subject-fact {
@@ -362,8 +370,9 @@ async function reload(): Promise<void> {
 
 .sitting {
   background-color: $rk-bg-card;
-  border: 1px solid $rk-border;
-  border-radius: $rk-radius-l;
+  border: 1px solid $rk-soft-border;
+  border-radius: $rk-soft-radius-card;
+  box-shadow: $rk-soft-shadow;
   overflow: hidden;
 
   &__head {
@@ -371,9 +380,11 @@ async function reload(): Promise<void> {
     align-items: baseline;
     justify-content: space-between;
     gap: $rk-space-l;
+    flex-wrap: wrap;
     padding: $rk-space-m $rk-space-l;
-    border-bottom: 1px solid $rk-border;
-    background-color: $rk-bg-page;
+    border-bottom: 1px solid $rk-soft-border;
+    // 场次表头用极浅蓝底，与卡片白底做柔和区分，不再是灰底硬块。
+    background-color: $rk-soft-spine-unprinted-1;
   }
 
   &__name {
@@ -456,8 +467,8 @@ async function reload(): Promise<void> {
   gap: $rk-space-s;
   padding: $rk-space-xs $rk-space-m;
   background-color: $rk-bg-card;
-  border: 1px solid $rk-border;
-  border-radius: $rk-radius-s;
+  border: 1px solid $rk-soft-border;
+  border-radius: $rk-radius-m;
 
   &__name {
     color: $rk-text-1;

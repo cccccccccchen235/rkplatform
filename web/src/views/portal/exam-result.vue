@@ -256,6 +256,11 @@ onMounted(load)
 
   &__panel {
     margin-top: $rk-space-xl;
+    padding: $rk-space-xl;
+    background-color: $rk-bg-card;
+    border: 1px solid $rk-soft-border;
+    border-radius: $rk-soft-radius-card;
+    box-shadow: $rk-soft-shadow;
   }
 
   &__panel-title {
@@ -285,16 +290,25 @@ onMounted(load)
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: $rk-space-m;
   margin-top: $rk-space-l;
+
+  @media (max-width: 1080px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .score-card {
   padding: $rk-space-l;
   background-color: $rk-bg-card;
-  border: 1px solid $rk-border;
-  border-radius: $rk-radius-l;
+  border: 1px solid $rk-soft-border;
+  border-radius: $rk-soft-radius-card;
+  box-shadow: $rk-soft-shadow;
 
   &--primary {
     border-color: $rk-primary;
+    box-shadow: $rk-soft-shadow-hover;
   }
 
   &__label {
@@ -323,8 +337,9 @@ onMounted(load)
 
 .sitting-result {
   background-color: $rk-bg-card;
-  border: 1px solid $rk-border;
-  border-radius: $rk-radius-l;
+  border: 1px solid $rk-soft-border;
+  border-radius: $rk-soft-radius-card;
+  box-shadow: $rk-soft-shadow;
   overflow: hidden;
 
   &__head {
@@ -333,8 +348,8 @@ onMounted(load)
     gap: $rk-space-m;
     flex-wrap: wrap;
     padding: $rk-space-m $rk-space-l;
-    background-color: $rk-bg-page;
-    border-bottom: 1px solid $rk-border;
+    background-color: $rk-soft-spine-unprinted-1;
+    border-bottom: 1px solid $rk-soft-border;
   }
 
   &__name {

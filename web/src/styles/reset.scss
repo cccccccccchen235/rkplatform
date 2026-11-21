@@ -18,12 +18,14 @@ body,
 
 body {
   margin: 0;
-  // 桌面优先（01 §1.5）：窗口窄于 1280 时保留横向滚动条，不压缩布局。
-  min-width: $rk-page-min-width;
+  // 2026-11-21 放开响应式（用户裁决，docs/36）：移除原 min-width:1280 的横向滚动约束。
+  // 窄屏由各页面自己的断点重排；不再全局强制最小宽度。
+  // 管理端 .admin-layout 自带纯色背景与桌面布局，不受此改动影响。
   font-size: $rk-font-s;
   line-height: $rk-line-height;
   color: $rk-text-1;
-  background-color: $rk-bg-page;
+  // 页面底渐变由 #app 提供（index.scss）；body 保持透明，让渐变铺满视口。
+  background-color: transparent;
   // 中文优先字体栈：先系统中文字体，再退回西文与通用族。
   // 不引外链字体（假设 A2：可能无外网），字体失败会让整页排版塌掉。
   font-family:

@@ -121,3 +121,46 @@ $rk-content-max-width: 1200px;
 $rk-sider-width: 220px;
 $rk-sider-collapsed-width: 64px;
 $rk-exam-aside-width: 280px;
+
+// ===============================================================
+// Soft Focus 令牌（2026-11-21 考生端推翻重做，docs/36）
+//
+// 这一组是**新增**令牌，上面任何既有令牌的取值都没有改动。理由：管理端
+// （.admin-layout）与考生端共用本文件，改既有值会让"管理端不碰"的裁决落空。
+// 考生端页面显式改用 soft 令牌，管理端继续读原值，两端互不感知。
+// 主色仍是唯一的那一个 #2a72c2；下面的浅蓝都是它的色阶，不是第二个强调色。
+// ===============================================================
+
+// ---- 页面蓝白渐变（极浅，文字压在其上仍满足对比度底线）----
+$rk-soft-page-top: #f3f8fe;
+$rk-soft-page-mid: #fbfdff;
+$rk-soft-page-bottom: #f6faff;
+$rk-soft-page-gradient: linear-gradient(180deg, $rk-soft-page-top 0%, $rk-soft-page-mid 55%, $rk-soft-page-bottom 100%);
+
+// ---- 书脊色阶与柔和边框（主色浅阶，不是新色相）----
+$rk-soft-spine-unprinted-1: #f8fbff;
+$rk-soft-spine-unprinted-2: #e9f2fc;
+$rk-soft-spine-printed-1: #ffffff;
+$rk-soft-spine-printed-2: #eaf2fc;
+$rk-soft-border: #dbe7f4;
+
+// ---- 蓝调微阴影（Soft Lift：仅在考生端取代 Board-Not-Shadow）----
+$rk-soft-shadow: 0 1px 2px rgba(42, 114, 194, 0.06), 0 8px 24px rgba(42, 114, 194, 0.05);
+$rk-soft-shadow-hover: 0 2px 4px rgba(42, 114, 194, 0.09), 0 14px 34px rgba(42, 114, 194, 0.1);
+
+// ---- 柔和圆角刻度 ----
+$rk-soft-radius-control: 8px;
+$rk-soft-radius-spine: 12px;
+$rk-soft-radius-card: 16px;
+
+// ---- 呼吸间距（章节之间用，不塞满每处）----
+$rk-soft-space-2xl: 32px;
+$rk-soft-space-3xl: 48px;
+
+// ---- 展示字号与正文行高（题干更宽松，减少屏上压迫感）----
+$rk-soft-font-display: 32px;
+$rk-soft-line-height-body: 1.75;
+
+// ---- 统一缓动与时长（指数缓出）----
+$rk-soft-ease: cubic-bezier(0.16, 1, 0.3, 1);
+$rk-soft-duration: 260ms;

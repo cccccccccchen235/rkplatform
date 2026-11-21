@@ -1,6 +1,6 @@
 ---
 name: 软考在线学习平台
-description: Element Plus 变量体系下的桌面优先软考学习平台：一个蓝、一面书架、零投影。
+description: 考生端为 Soft Focus 柔焦书房（蓝白渐变、微阴影、响应式）；管理端保留 The Honest Bookshelf（一个蓝、1px 线、零投影、桌面固定）。详见 docs/36。
 colors:
   primary: "#2a72c2"
   primary-dark: "#225b9b"
@@ -85,6 +85,25 @@ components:
 ---
 
 # Design System: 软考在线学习平台
+
+> ## ⚠️ 当前状态（2026-11-21，docs/36）——本文分两端阅读
+>
+> 本篇下半部分描述的 **"The Honest Bookshelf（一面诚实的书架）：一个蓝、2/4/8 圆角、1px 层板、零投影、桌面优先 1280"**，
+> 自 `docs/36` 起**只适用于管理端（`.admin-layout`）**，并作为设计史留痕保留。
+>
+> **考生端（`.portal-layout` / `.blank-layout`）已推翻重做为 "Soft Focus · 柔焦书房"**：
+>
+> - 三条旧硬规则（The One Blue / Board-Not-Shadow / No-Gradient）在考生端作废，替换为
+>   **Blue as Anchor / Soft Lift / Gradient as Ground**；
+> - 页面底为舒缓蓝白渐变，卡片 16px 圆角 + 蓝调微阴影，书脊渐变 + 12px 顶角 + hover 浮起；
+> - 主蓝仍是唯一的 `#2a72c2`（用户裁决"坚持"），柔和感来自它的浅阶渐变，不引入第二个色相；
+> - 页面切换有 `rk-page` 淡入；响应式放开（不再强制 1280 横向滚动）。
+>
+> 实现机制是"**只新增 `$rk-soft-*` 令牌、不改旧令牌值 + 考生端作用域覆盖**"，
+> 因此管理端视觉零变化。完整令牌表、页面清单、规则替换与验证见
+> **[docs/36-soft-focus-redesign.md](docs/36-soft-focus-redesign.md)**。
+>
+> 下文如与 `docs/36` 冲突，以 `docs/36` 对考生端的规定为准。
 
 ## Overview
 

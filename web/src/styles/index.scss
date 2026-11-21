@@ -34,6 +34,87 @@
   --rk-radius-l: #{$rk-radius-l};
 
   --rk-content-max-width: #{$rk-content-max-width};
+
+  // ---- Soft Focus（考生端；管理端读到这些变量也不使用它们）----
+  --rk-soft-page-gradient: #{$rk-soft-page-gradient};
+  --rk-soft-border: #{$rk-soft-border};
+  --rk-soft-shadow: #{$rk-soft-shadow};
+  --rk-soft-shadow-hover: #{$rk-soft-shadow-hover};
+  --rk-soft-radius-control: #{$rk-soft-radius-control};
+  --rk-soft-radius-card: #{$rk-soft-radius-card};
+  --rk-soft-ease: #{$rk-soft-ease};
+  --rk-soft-duration: #{$rk-soft-duration};
+}
+
+// 考生端页面底：舒缓蓝白渐变，铺在 app 根上；管理端自己给 .admin-layout 设纯色底，
+// 所以这里不影响它。background-attachment: fixed 让渐变跨整页连续，不随内容分段。
+#app {
+  background: $rk-soft-page-gradient;
+  background-attachment: fixed;
+}
+
+// ===============================================================
+// 考生端 Element Plus 柔和化（高杠杆层）
+//
+// 只作用在 .portal-layout / .blank-layout 两个考生端布局作用域内。管理端是
+// .admin-layout，不带这两个类，因此下面每一条对管理端都不生效——"管理端不碰"。
+//
+// ① 覆盖 --el-border-radius-base：所有 input / select / button / tag 等控件的
+//    圆角从 4px 变 8px，一处声明全站考生端生效。
+// ② el-card 加柔和圆角与蓝调微阴影，取代原来的硬边框。
+// ===============================================================
+.portal-layout,
+.blank-layout {
+  --el-border-radius-base: #{$rk-soft-radius-control};
+
+  .el-card {
+    border-radius: $rk-soft-radius-card;
+    border-color: $rk-soft-border;
+    box-shadow: $rk-soft-shadow;
+  }
+
+  .el-alert.is-light {
+    // 考生端的提示板也跟随柔和边框；语义仍由图标 + 文字承载。
+    border-color: $rk-soft-border;
+    border-radius: $rk-soft-radius-control;
+  }
+}
+
+// ===============================================================
+// 页面切换淡入（用户裁决：页面切换也加淡入）。
+//
+// 挂在 PortalLayout / BlankLayout 的 <router-view> 外层的 <Transition name="rk-page">。
+// 管理端的 router-view 不套这个 Transition，所以管理端没有任何页面切换动效。
+// 只动 opacity + transform（合成层属性，不触发布局），指数缓出，时长与书脊同口径。
+// ===============================================================
+.rk-page-enter-active {
+  transition:
+    opacity $rk-soft-duration $rk-soft-ease,
+    transform $rk-soft-duration $rk-soft-ease;
+}
+
+.rk-page-leave-active {
+  // 离场略快：让新页尽快出现，避免 out-in 模式下的空窗感。
+  transition:
+    opacity ($rk-soft-duration * 0.6) $rk-soft-ease,
+    transform ($rk-soft-duration * 0.6) $rk-soft-ease;
+}
+
+.rk-page-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.rk-page-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rk-page-enter-active,
+  .rk-page-leave-active {
+    transition: none;
+  }
 }
 
 // 内容区容器：全站统一的居中宽度，页面里不要各自写 max-width。
@@ -67,9 +148,9 @@ button:focus-visible:not(.el-button) {
 // ===============================================================
 // 浏览器自带的界面也是页面的一部分：选中色、光标、滚动条。
 //
-// 这一页在 1280 基准宽下**常驻一条横向滚动条**（body 有 min-width:1280px，
-// 再减去纵向滚动条后内容区不足 1280），所以它不是偶尔出现的系统部件，
-// 而是一块始终可见、被刻意设计围绕的面积——留成 OS 默认灰等于没做。
+// 滚动条是任何长页面都会出现的系统部件（章节大纲、成绩回顾、错题列表都可能超长），
+// 所以要主动设计而不是留成 OS 默认灰。2026-11-21 放开响应式后 body 不再有 min-width，
+// 横向滚动条不再常驻，但纵向滚动条依然常见，这段样式照旧成立。
 // ===============================================================
 
 // 选中：淡主色底 + 不变字色。不用"主色实底 + 白字"——保留原字色可以让被选中的

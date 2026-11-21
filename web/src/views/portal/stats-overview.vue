@@ -346,14 +346,22 @@ onMounted(async () => {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: $rk-space-m;
     margin-bottom: $rk-space-l;
+
+    @media (max-width: 1080px) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    @media (max-width: 600px) {
+      grid-template-columns: 1fr;
+    }
   }
 
   &__panel {
-    padding: $rk-space-l;
+    padding: $rk-space-xl;
     margin-bottom: $rk-space-l;
     background-color: $rk-bg-card;
-    border: 1px solid $rk-border;
-    border-radius: $rk-radius-l;
+    border: 1px solid $rk-soft-border;
+    border-radius: $rk-soft-radius-card;
+    box-shadow: $rk-soft-shadow;
   }
 
   &__panel-title {
@@ -373,8 +381,9 @@ onMounted(async () => {
 .stat-card {
   padding: $rk-space-l;
   background-color: $rk-bg-card;
-  border: 1px solid $rk-border;
-  border-radius: $rk-radius-l;
+  border: 1px solid $rk-soft-border;
+  border-radius: $rk-soft-radius-card;
+  box-shadow: $rk-soft-shadow;
 
   &__label {
     color: $rk-text-2;
@@ -473,6 +482,17 @@ onMounted(async () => {
     color: $rk-text-3;
     font-size: $rk-font-xs;
   }
+
+  @media (max-width: 760px) {
+    grid-template-columns: 1fr 90px 60px;
+    // 窄屏隐藏进度条与状态列，文字与百分比仍完整
+    &__track,
+    &__spacer,
+    &__idle,
+    :deep(.el-tag) {
+      display: none;
+    }
+  }
 }
 
 .weak-list {
@@ -513,6 +533,13 @@ onMounted(async () => {
     color: $rk-text-1;
     font-variant-numeric: tabular-nums;
     text-align: right;
+  }
+
+  @media (max-width: 760px) {
+    grid-template-columns: 1fr 64px;
+    &__meta {
+      display: none;
+    }
   }
 }
 </style>

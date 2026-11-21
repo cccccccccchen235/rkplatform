@@ -307,14 +307,17 @@ function goRedo(): void {
   gap: $rk-space-l;
   padding: $rk-space-m $rk-space-l;
   background-color: $rk-bg-card;
-  border: 1px solid $rk-border;
-  border-radius: $rk-radius-l;
-  // 与科目卡同一条 160ms 缓出：扫描列表时边框给一个轻微的落点，
-  // 不改背景、不加投影（Board-Not-Shadow Rule）。
-  transition: border-color 160ms ease-out;
+  border: 1px solid $rk-soft-border;
+  border-radius: $rk-soft-radius-card;
+  box-shadow: $rk-soft-shadow;
+  flex-wrap: wrap;
+  transition:
+    border-color 160ms ease-out,
+    box-shadow $rk-soft-duration $rk-soft-ease;
 
   &:hover {
-    border-color: $rk-primary;
+    border-color: rgba($rk-primary, 0.5);
+    box-shadow: $rk-soft-shadow-hover;
   }
 
   &__main {
@@ -364,6 +367,16 @@ function goRedo(): void {
     margin-top: 2px;
     color: $rk-text-1;
     font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (max-width: 760px) {
+  .wrong-item__stats {
+    gap: $rk-space-m;
+    flex-wrap: wrap;
+  }
+  .wrong-item__actions {
+    width: 100%;
   }
 }
 </style>

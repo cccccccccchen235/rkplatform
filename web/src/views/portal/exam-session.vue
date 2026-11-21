@@ -471,14 +471,16 @@ onBeforeUnmount(() => {
 .exam-session {
   width: 100%;
   min-height: 100vh;
-  background-color: $rk-bg-page;
+  // 透明，透出 #app 的蓝白渐变（docs/36）。
+  background-color: transparent;
 
   &__topbar {
     position: sticky;
     top: 0;
     z-index: 10;
-    background-color: $rk-bg-card;
-    border-bottom: 1px solid $rk-border;
+    background-color: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 1px 3px rgba(42, 114, 194, 0.08);
   }
 
   &__topbar-inner {
@@ -536,8 +538,9 @@ onBeforeUnmount(() => {
     color: $rk-text-1;
     font-variant-numeric: tabular-nums;
 
+    // 最后 5 分钟用柔和的深琥珀提示，而非刺眼的警告红（舒缓备考压力，docs/36）。
     &.is-warning {
-      color: $rk-danger;
+      color: $rk-warning;
     }
   }
 
@@ -584,8 +587,9 @@ onBeforeUnmount(() => {
     max-width: 900px;
     padding: $rk-space-xl;
     background-color: $rk-bg-card;
-    border: 1px solid $rk-border;
-    border-radius: $rk-radius-l;
+    border: 1px solid $rk-soft-border;
+    border-radius: $rk-soft-radius-card;
+    box-shadow: $rk-soft-shadow;
   }
 
   &__pending-title {
@@ -604,6 +608,11 @@ onBeforeUnmount(() => {
     display: flex;
     align-items: flex-start;
     gap: $rk-space-l;
+
+    // 响应式：窄屏把答题卡移到题目下方，而不是横向挤压题干。
+    @media (max-width: 900px) {
+      flex-direction: column;
+    }
   }
 
   &__content {
@@ -624,13 +633,14 @@ onBeforeUnmount(() => {
     font-size: $rk-font-s;
     color: $rk-text-2;
     background-color: $rk-bg-card;
-    border: 1px solid $rk-border;
-    border-radius: $rk-radius-s;
+    border: 1px solid $rk-soft-border;
+    border-radius: $rk-soft-radius-control;
     cursor: pointer;
 
     &.is-active {
       color: $rk-primary;
       border-color: $rk-primary;
+      background-color: rgba($rk-primary, 0.08);
     }
 
     &.is-disabled {

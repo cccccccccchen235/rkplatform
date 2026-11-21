@@ -107,6 +107,8 @@ async function handleLogout(): Promise<void> {
 .admin-layout {
   min-height: 100vh;
   display: flex;
+  // 管理端保持原样：纯色底 + 桌面优先。body 在 2026-11-21 改为透明并放开响应式，
+  // 这里显式补回原来的纯色底，挡住考生端的渐变；管理端不做窄屏重排（本轮"不碰"裁决）。
   background-color: $rk-bg-page;
 }
 

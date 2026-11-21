@@ -121,10 +121,11 @@ const checkboxValue = computed<(string | number)[]>({
 
 <style scoped lang="scss">
 .exam-question {
-  padding: $rk-space-l;
+  padding: $rk-space-xl;
   background-color: $rk-bg-card;
-  border: 1px solid $rk-border;
-  border-radius: $rk-radius-l;
+  border: 1px solid $rk-soft-border;
+  border-radius: $rk-soft-radius-card;
+  box-shadow: $rk-soft-shadow;
 
   &__head {
     display: flex;
@@ -132,13 +133,13 @@ const checkboxValue = computed<(string | number)[]>({
     gap: $rk-space-m;
     padding-bottom: $rk-space-m;
     margin-bottom: $rk-space-l;
-    border-bottom: 1px solid $rk-border;
+    border-bottom: 1px solid $rk-soft-border;
   }
 
   &__type {
     padding: 0 $rk-space-s;
-    border: 1px solid $rk-border;
-    border-radius: $rk-radius-s;
+    border: 1px solid $rk-soft-border;
+    border-radius: $rk-radius-m;
     color: $rk-text-1;
     font-size: $rk-font-xs;
     line-height: 20px;
@@ -152,6 +153,7 @@ const checkboxValue = computed<(string | number)[]>({
 
   &__stem {
     margin-bottom: $rk-space-l;
+    line-height: $rk-soft-line-height-body;
   }
 
   &__images {
@@ -180,9 +182,9 @@ const checkboxValue = computed<(string | number)[]>({
 }
 
 .exam-option {
-  padding: $rk-space-s $rk-space-m;
-  border: 1px solid $rk-border;
-  border-radius: $rk-radius-m;
+  padding: $rk-space-m;
+  border: 1px solid $rk-soft-border;
+  border-radius: $rk-soft-radius-control;
 
   &__key {
     display: inline-block;

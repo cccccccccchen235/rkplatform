@@ -94,8 +94,15 @@ function handleClick(item: ExamItemVO, section: ExamSectionVO): void {
   align-self: flex-start;
   padding: $rk-space-l;
   background-color: $rk-bg-card;
-  border: 1px solid $rk-border;
-  border-radius: $rk-radius-l;
+  border: 1px solid $rk-soft-border;
+  border-radius: $rk-soft-radius-card;
+  box-shadow: $rk-soft-shadow;
+
+  // 窄屏时答题卡不再固定 280px，铺满下方。
+  @media (max-width: 900px) {
+    width: 100%;
+    flex-basis: auto;
+  }
 
   &__title {
     font-size: $rk-font-m;
@@ -147,7 +154,7 @@ function handleClick(item: ExamItemVO, section: ExamSectionVO): void {
     gap: $rk-space-s;
     padding-bottom: $rk-space-xs;
     margin-bottom: $rk-space-s;
-    border-bottom: 1px solid $rk-border;
+    border-bottom: 1px solid $rk-soft-border;
   }
 
   &__group-name {
@@ -180,8 +187,8 @@ function handleClick(item: ExamItemVO, section: ExamSectionVO): void {
     font-variant-numeric: tabular-nums;
     color: $rk-text-2;
     background-color: $rk-bg-card;
-    border: 1px solid $rk-border;
-    border-radius: $rk-radius-s;
+    border: 1px solid $rk-soft-border;
+    border-radius: $rk-radius-m;
     cursor: pointer;
 
     &.is-answered {
